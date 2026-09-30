@@ -26,20 +26,21 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 ## 4. Current State
 | Item | Value |
 |---|---|
-| Current phase | Phase 1 — Repository & Infrastructure (◐ in progress) |
-| Current task | P1.7 README — `[x]` (2026-09-30, commands ran as written in a clean shell, stack starts). Next: **P1.8** phase close |
-| Last completed task | P1.7 README.md — verified `down` → `cp .env.example .env` → `up -d --wait` → 4/4 healthy in `powershell -NoProfile` |
-| Last completed phase | Phase 0 — Documentation & Architecture (2026-09-30) |
-| Repository state | Branch `phase/01-infra` (from `main` @ `b883039`). Compose stack **running**: 4 healthy containers, all bound to 127.0.0.1. No app code yet, no CI |
-| Branch | `phase/01-infra` (active, Phase 1 work) · `main` (baseline, pushed) |
-| Last verified build | None — no build exists. Doc verification checks pass (see §6) |
+| Current phase | Phase 1 — Repository & Infrastructure (**Done ☑** 2026-09-30) |
+| Current task | P1.8 Phase close — `[x]` (2026-09-30). Next: **Phase 2 / P2.1** (Spring Boot skeleton) — starts only on user instruction |
+| Last completed task | P1.8 PROJECT_CONTEXT local setup + phase log + ROADMAP overview — `[x]` |
+| Last completed phase | **Phase 1** (2026-09-30); before it Phase 0 (2026-09-30) |
+| Repository state | Branch `phase/01-infra`: `b883039` + 6 Phase 1 task commits + this P1.8 docs commit, tree clean; compose stack **4× healthy**, every port 127.0.0.1; lint green |
+| Branch | `phase/01-infra` (Phase 1 complete) · `main` (baseline `b883039`) |
+| Last verified build | `backend`: `./mvnw spotless:check` exit 0 · `frontend`: `npm run lint` / `typecheck` / `format:check` exit 0 — no application build yet (arrives Phase 2/7) |
 
 ## 5. Next action
-Phase 1 on `phase/01-infra`; P1.7 done (README verified runnable). Last task **P1.8**: phase close — rewrite PROJECT_CONTEXT §16 Local Setup to the verified commands, refresh §4/§6/§13, mark the Phase 1 phase-log row and ROADMAP overview ☑, final docs commit. Phase 1 DoD re-check: compose healthy + no secrets committed. Then **stop** — Phase 2 starts only on user instruction (ENGINEERING_RULES §2.1).
+**Phase 1 is complete (2026-09-30).** Next phase: **Phase 2 — Backend Foundation**, starting at **P2.1** — Spring Boot 3 / Java 21 skeleton with the TDD §5 package layout (`backend/`, root package `com.healthcare.hms`); Verify: `./mvnw -q compile` exits 0. Do **not** start it automatically (ENGINEERING_RULES §2.1) — wait for the user's instruction; then use the Phase Prompt (AI_DEVELOPMENT_GUIDE §6).
 
-## 6. Working tree state (2026-09-30)
-- **Git:** repository initialized by the user — `b883039 "Initial project setup"` on `main`, pushed to `origin/main`; Phase 1 work on **`phase/01-infra`** (ENGINEERING_RULES §10), one conventional commit per task: P1.3 → `f5625a8`, P1.4 → `5d71eaa`, P1.5 → `4e4b6c3`, P1.6 → `607e6f9`.
-- **Uncommitted changes (on `phase/01-infra`):** `README.md` (new), `infra/.env.example` (ASCII header fix), `docs/ROADMAP.md`, `docs/PROJECT_CONTEXT.md` (P1.7 checkbox + evidence) — committed together as the P1.7 change.
+## 6. Working tree state (2026-09-30, phase close)
+- **Git:** `b883039 "Initial project setup"` on `main` (pushed by the user). Phase 1 on **`phase/01-infra`**, one conventional commit per task: `f5625a8` (P1.3 compose) · `5d71eaa` (P1.4 env template + gitignore) · `4e4b6c3` (P1.5 lint configs) · `607e6f9` (P1.6 smoke test) · `79274f1` (P1.7 README) · + this P1.8 docs commit. Merge/push of the phase branch is the user's cadence call (§13.3).
+- **Build / checks right now (all green):** `./mvnw spotless:check` → 0 · `npm run lint` → 0 · `npm run typecheck` → 0 · `npm run format:check` → 0 · `docker compose ps` → 4/4 healthy · README quick-start re-run (P1.7) → healthy · `git grep` for local secret values → 0 matches · `git check-ignore -v .env` → matched (`.gitignore:2`).
+- **Doc checks:** `docs/` holds the 13 design docs; root holds `README.md` (P1.7) only.
 - **Build / tests right now:** no build or test suite exists (no application code). Checks that *do* run, executed this session, all pass:
   - `(Get-ChildItem docs -Filter *.md).Count` → **13**; root `*.md` → **0**
   - `Select-String PROJECT_CONTEXT.md 'fill in'` → **0 matches** (excluding the self-referencing command line)
@@ -51,7 +52,7 @@ Phase 1 on `phase/01-infra`; P1.7 done (README verified runnable). Last task **P
 | Phase | Status | Commit | Notes / known issues |
 |---|---|---|---|
 | 0 | **Done ☑** | `b883039` (all Phase 0 docs committed by the user's initial commit) | P0.1–P0.8 all `[x]`; **approved by user 2026-09-30** — OQ-1…6 / TQ-1…7 accepted at defaults, CONF-1…6 + GAP-1 decided (§10); 13 docs moved from repo root into `docs/` |
-| 1 | **In progress ◐** | base `b883039` on `main`; Phase 1 work on `phase/01-infra` | P1.1 `[x]`, P1.2 `[x]` (2026-09-30); next P1.3 (Docker Compose, CONF-2 topology) |
+| 1 | **Done ☑** | `b883039` base on `main`; `f5625a8` → `79274f1` + P1.8 docs commit on `phase/01-infra` | P1.1–P1.8 all `[x]` (2026-09-30). Compose 4× healthy, loopback-only; MinIO via openvidu mirror (§9.13); native Redis service stopped+disabled (§9.14); Spotless + ESLint/Prettier/tsc green; README commands verified runnable; no secrets committed |
 | 2–30 | Not started ☐ | – | Checklists live in ROADMAP.md; a phase starts only when the previous one meets its DoD |
 
 ## 8. Decisions Locked
@@ -132,21 +133,25 @@ Phase 1 on `phase/01-infra`; P1.7 done (README verified runnable). Last task **P
 
 ## 12. Reusable Building Blocks
 Registry of shared code to consult **before writing anything new**.
-- **Added this session:** none — no application code was written.
-- Repository still contains **zero** reusable backend utilities/services or frontend components/hooks.
+- **Added in Phase 1** (build/lint scaffolding, no runtime code): Maven Wrapper (`backend/mvnw`, `backend/mvnw.cmd`, `.mvn/wrapper/` — no system `mvn` required), `infra/.env.example`, root `README.md`.
 
 | Name | Path | Purpose |
 |---|---|---|
-| *(no entries yet)* | | |
+| Maven Wrapper + Spotless | `backend/mvnw*`, `backend/pom.xml` | `./mvnw spotless:check` / `spotless:apply` (google-java-format 1.22.0) |
+| Frontend lint/format | `frontend/eslint.config.mjs`, `.prettierrc`, `tsconfig.json` | `npm run lint` / `format:check` / `typecheck` (strict) |
+| Compose stack | `infra/docker-compose.yml` | mysql/redis/minio/nginx; `--profile full` adds backend/frontend (CONF-2) |
 
 ## 13. Gotchas (read before running anything)
-1. **Shell is Windows PowerShell 5.1.** `&&` is not supported — use `cmd1; if ($?) { cmd2 }`. UTF-8 glyphs (☐ ◐ — §) render as mojibake in the console; files are fine, verify with the Read tool, not `Get-Content`.
-2. **Nothing runs yet:** `docker compose up`, `./mvnw …`, `npm run dev`, `npm test` all fail — no compose file, no `backend/`, no `frontend/`. ROADMAP `Verify:` commands are future targets (assumption A4).
-3. **Git exists now:** repo pushed at `b883039` on `main`; Phase 1 work happens on `phase/01-infra`. Push/merge cadence is the user's call — never force-push or rewrite pushed history. Commit messages follow conventional commits from here on (ENGINEERING_RULES §10).
-4. **File count is 13, not 14** — trust a directory listing, not any older note.
-5. **Docs live in `docs/`** (moved there 2026-09-30, per user instruction — CONF-1 decided: follow TDD §5); `.github/`, `infra/` do not exist yet (created in Phase 1).
-6. **Phase 0 is closed (approved 2026-09-30)** — Phase 1 starts only when instructed (P1.1 first). All CONF-*/GAP-1 were decided by the user (§10); never change a decided answer silently — raise it instead.
-7. **14 docs claim anywhere else → it's the same DOC-1 bug**, not a second source of truth.
+1. **Shell is Windows PowerShell 5.1.** `&&` is not supported — use `cmd1; if ($?) { cmd2 }` or separate lines. UTF-8 glyphs (☐ ◐ — §) render as mojibake in the console; files are fine, verify with the Read tool, not `Get-Content`. Native stderr (e.g., `java -version`) shows up as a red `NativeCommandError` — not a failure.
+2. **What runs today (Phase 1 complete):** `docker compose up -d --wait` (4 healthy), `./mvnw spotless:check`, `npm run lint`. What does **NOT** yet exist: app code — `mvn spring-boot:run` (Phase 2), `npm run dev`/`build` (Phase 7), `--profile full` images (P2/P7). ROADMAP `Verify:` names for future tests are targets to create (A4).
+3. **Git:** repo pushed at `b883039` on `main`; Phase 1 committed on `phase/01-infra` (`f5625a8`…P1.8). Push/merge cadence is the user's call — never force-push or rewrite pushed history. Conventional commits from here on (ENGINEERING_RULES §10).
+4. **Design-doc count is 13, not 14** — that is `docs/*.md` only; the root `README.md` (P1.7) is separate and does not change the 13.
+5. **Docs live in `docs/`** (CONF-1); `infra/` exists (compose, nginx, `.env.example`); `backend/` and `frontend/` hold lint scaffolding only.
+6. **Phase 0 and Phase 1 are closed** (both approved/done 2026-09-30). Next phase starts only on instruction; never change a decided answer silently — raise it instead.
+7. **14 docs claimed anywhere** → it's the same DOC-1 counting bug, not a second source of truth.
+8. **First `./mvnw` run downloads Maven 3.9.9** from Central (~1 min, network required); there is no system `mvn` on this machine. `.gitattributes` keeps `mvnw`/`*.sh` LF so Git Bash/CI work.
+9. **Host ports must be free:** 3306, 6379, 9000, 9001, 80 — the native Windows Redis service was stopped+disabled for :6379 (§9.14, reversible `sc.exe start Redis`).
+10. **`infra/.env` is gitignored and never in `git status`** — if it ever appears, stop and fix `.gitignore` before committing.
 
 ## 14. Handoff Notes
 1. Read order: PROJECT_CONTEXT → PRD → TDD → ARCHITECTURE → ENGINEERING_RULES → ROADMAP → DESIGN_SYSTEM → (DATABASE, API, SECURITY, TESTING, DEPLOYMENT, AI_DEVELOPMENT_GUIDE).
@@ -171,12 +176,35 @@ Earlier iterations of this kind of project hit recurring problems. Guard against
 - Unbounded endpoints (e.g., patient timeline)
 - Features marked "complete" without verification
 
-## 16. Local Setup (provisional — NOT runnable today)
+## 16. Local Setup (verified 2026-09-30 — these exact commands ran successfully; mirrors README.md)
+
+**Infrastructure stack** (PowerShell or bash):
 ```bash
-docker compose up -d        # needs compose file from P1.3 (infra default; --profile full adds backend/frontend per CONF-2)
-cd backend && ./mvnw spring-boot:run   # backend/ does not exist yet (Phase 2)
-cd frontend && npm install && npm run dev   # frontend/ does not exist yet (Phase 7)
+cd infra
+cp .env.example .env        # FIRST RUN ONLY — then replace the changeme_* values in infra/.env
+docker compose up -d --wait # ~40 s; all four services report (healthy)
+docker compose ps
 ```
+
+**Stop / reset:**
+```bash
+cd infra
+docker compose down         # stop containers, keep data volumes
+docker compose down -v      # stop AND delete data volumes (irreversible)
+```
+
+**Lint / format checks:**
+```bash
+cd backend
+./mvnw spotless:check       # exit 0; first run downloads Maven 3.9.9
+```
+```bash
+cd frontend
+npm install
+npm run lint                # exit 0 (also: npm run typecheck, npm run format:check)
+```
+
+Application runs (`./mvnw spring-boot:run`, `npm run dev`) arrive with Phases 2/7 — they do not exist yet.
 
 ## 17. How to Work Here
 1. Read the docs in §3.

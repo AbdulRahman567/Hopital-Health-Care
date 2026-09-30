@@ -13,7 +13,7 @@ Each phase is small, verifiable and ends with the Definition of Done. **Only the
 | # | Phase | Depends on | Status |
 |---|---|---|---|
 | 0 | Documentation & Architecture | – | ☑ |
-| 1 | Repository & Infrastructure | 0 | ◐ |
+| 1 | Repository & Infrastructure | 0 | ☑ |
 | 2 | Backend Foundation | 1 | ☐ |
 | 3 | Database Foundation | 2 | ☐ |
 | 4 | Multi-Tenancy | 3 | ☐ |
@@ -94,6 +94,7 @@ Each phase is small, verifiable and ends with the Definition of Done. **Only the
 - P1.5 ✓ **backend:** `./mvnw spotless:apply` + `./mvnw spotless:check` → both exit 0. No system `mvn` exists → Maven Wrapper 3.3.4 (`only-script` type, no wrapper jar) bootstraps Maven 3.9.9 from Central on first run; Spotless 2.43.0 + google-java-format 1.22.0 over `src/main|test/java`; source root `com.healthcare.hms` (TDD §5) seeded with `package-info.java`. **frontend:** `npm install` → 111 packages; `npm run lint` → **exit 0** (ESLint 9 flat config `eslint.config.mjs`, typescript-eslint 8 recommended, `eslint-config-prettier` applied last); `npm run typecheck` → exit 0 (`tsc --noEmit`, `strict` + `noUncheckedIndexedAccess`); `npm run format:check` → exit 0 (Prettier 3, config normalized via `npm run format`). Toolchain: JDK 21.0.11 · Node 24.19.0 · npm 11.17.0. `.gitattributes` pins `mvnw`/`*.sh` to LF so the wrapper also runs in Git Bash/CI
 - P1.6 ✓ `docker compose ps` → mysql/redis/minio/nginx **all Up (healthy)**, exit 0. `docker compose config` → exit 0; published ports `80, 3306, 6379, 9000, 9001` each carry `host_ip: 127.0.0.1` (5 ports, 5 loopback bindings — nothing on 0.0.0.0; MinIO console :9001 is loopback-only, satisfying "no management ports published"). `docker compose config --services` → `nginx, redis, minio, mysql` only (backend/frontend gated behind `--profile full` per CONF-2)
 - P1.7 ✓ README.md (root) written with a paste-able quick start; verified by executing its exact commands in a **clean `powershell -NoProfile` process**: `docker compose down` → exit 0; first-run `cp .env.example .env` → exit 0 (placeholder file created; existing `infra/.env` rename-protected, then restored — README marks cp as "first run only"); `docker compose up -d --wait` → exit 0 with nginx/mysql/redis/minio all *Healthy*; `docker compose ps` → 4/4 healthy. Side fix: `infra/.env.example` header em-dash → ASCII hyphen (PS 5.1 `Get-Content` reads UTF-8-no-BOM as ANSI → mojibake in the template users copy)
+- P1.8 ✓ PROJECT_CONTEXT refreshed for phase close: §16 Local Setup now holds the **exact commands verified in P1.5/P1.7** (cd infra → cp .env.example .env (first run) → `docker compose up -d --wait` → `docker compose ps`; stop/reset; `./mvnw spotless:check`; `npm install` + `npm run lint`); §4 Current State / §5 Next action (Phase 2 on instruction only) / §6 Working tree / §12 Building blocks / §13 Gotchas updated; phase-log row 1 → **Done ☑** with commit hashes. ROADMAP overview row 1 → ☑. Phase 1 Exit re-checked live: `docker compose ps` 4/4 healthy · `git grep hms_local_*_pw` → 0 matches · `git check-ignore -v .env` → matched. This docs commit is the last entry in `git log --oneline` for the phase
 
 ### Phase 2 — Backend Foundation
 - **Scope:** Spring Boot skeleton, package structure, response envelope, error handling, pagination helpers, base entities, OpenAPI (dev only), JSON logging, health endpoints.
