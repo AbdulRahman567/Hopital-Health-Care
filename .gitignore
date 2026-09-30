@@ -1,3 +1,27 @@
+# Secrets — never commit
 .env
 .env.*
 !.env.example
+
+# Build output
+target/
+build/
+dist/
+out/
+coverage/
+
+# Node
+node_modules/
+.next/
+.turbo/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+*.log
+
+.DS_Store
+Thumbs.db
+desktop.ini

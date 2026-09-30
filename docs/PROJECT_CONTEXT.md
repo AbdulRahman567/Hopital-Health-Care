@@ -27,19 +27,19 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 | Item | Value |
 |---|---|
 | Current phase | Phase 1 — Repository & Infrastructure (◐ in progress) |
-| Current task | P1.3 Docker Compose — `[x]` (2026-09-30, all 4 services healthy). Next: **P1.4** env templates, awaiting "continue" |
-| Last completed task | P1.3 Compose stack (mysql/redis/minio/nginx) — `[x]`, `up -d --wait` EXIT=0, smoke tests pass |
+| Current task | P1.4 Environment templates — `[x]` (2026-09-30, all verify checks green). Next: **P1.5** lint/format configs (backend Spotless, frontend ESLint/Prettier/tsc) |
+| Last completed task | P1.4 `.env.example` + `.gitignore` — `[x]`, ignore checks + repo-wide secret search pass |
 | Last completed phase | Phase 0 — Documentation & Architecture (2026-09-30) |
 | Repository state | Branch `phase/01-infra` (from `main` @ `b883039`). Compose stack **running**: 4 healthy containers, all bound to 127.0.0.1. No app code yet, no CI |
 | Branch | `phase/01-infra` (active, Phase 1 work) · `main` (baseline, pushed) |
 | Last verified build | None — no build exists. Doc verification checks pass (see §6) |
 
 ## 5. Next action
-Phase 1 on `phase/01-infra`; compose stack running (infra profile). Next task **P1.4**: `.env.example` with placeholders, `.gitignore` excludes `.env` (the ignore lines already exist — P1.4 completes the file + template). Verify: `git check-ignore -v .env` succeeds; repo-wide search finds no secret values.
+Phase 1 on `phase/01-infra`; compose stack running (infra profile). Next task **P1.5**: lint/format configs — backend `backend/pom.xml` + Spotless (+ Maven Wrapper, no system `mvn` installed), frontend `frontend/package.json` with ESLint 9 flat config, Prettier, `tsc --strict`. Verify: `./mvnw spotless:check` exits 0; `npm run lint` exits 0.
 
 ## 6. Working tree state (2026-09-30)
-- **Git:** repository initialized by the user — `b883039 "Initial project setup"` on `main`, pushed to `origin/main`; this session created and switched to **`phase/01-infra`** (convention: ENGINEERING_RULES §10). Conventional commits apply from the next commit on.
-- **Uncommitted changes (on `phase/01-infra`):** `docs/ROADMAP.md`, `docs/PROJECT_CONTEXT.md`, `.gitignore` (env ignore lines), `infra/docker-compose.yml`, `infra/nginx/nginx.conf`, `infra/.env` (gitignored — must never appear in `git status`).
+- **Git:** repository initialized by the user — `b883039 "Initial project setup"` on `main`, pushed to `origin/main`; Phase 1 work on **`phase/01-infra`** (ENGINEERING_RULES §10), one conventional commit per task: P1.3 → `f5625a8 chore(infra): add compose stack with healthchecks`.
+- **Uncommitted changes (on `phase/01-infra`):** `docs/ROADMAP.md`, `docs/PROJECT_CONTEXT.md`, `.gitignore` (completed), `infra/.env.example` — committed together as the P1.4 change. `infra/.env` is gitignored and must never appear in `git status` (verified this session).
 - **Build / tests right now:** no build or test suite exists (no application code). Checks that *do* run, executed this session, all pass:
   - `(Get-ChildItem docs -Filter *.md).Count` → **13**; root `*.md` → **0**
   - `Select-String PROJECT_CONTEXT.md 'fill in'` → **0 matches** (excluding the self-referencing command line)
