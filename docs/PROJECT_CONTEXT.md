@@ -30,15 +30,15 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 | Current task | P1.8 Phase close — `[x]` (2026-09-30). Next: **Phase 2 / P2.1** (Spring Boot skeleton) — starts only on user instruction |
 | Last completed task | P1.8 PROJECT_CONTEXT local setup + phase log + ROADMAP overview — `[x]` |
 | Last completed phase | **Phase 1** (2026-09-30); before it Phase 0 (2026-09-30) |
-| Repository state | Branch `phase/01-infra`: `b883039` + 6 Phase 1 task commits + this P1.8 docs commit, tree clean; compose stack **4× healthy**, every port 127.0.0.1; lint green |
-| Branch | `phase/01-infra` (Phase 1 complete) · `main` (baseline `b883039`) |
+| Repository state | `main` = `893dc26` (merge of `phase/01-infra`, 23 files +2521); tree clean; compose stack **4× healthy**, every port 127.0.0.1; lint green |
+| Branch | `main` (Phase 1 merged @ `893dc26`, pushed) · `phase/01-infra` (task commits `f5625a8`…`af1c339`) |
 | Last verified build | `backend`: `./mvnw spotless:check` exit 0 · `frontend`: `npm run lint` / `typecheck` / `format:check` exit 0 — no application build yet (arrives Phase 2/7) |
 
 ## 5. Next action
 **Phase 1 is complete (2026-09-30).** Next phase: **Phase 2 — Backend Foundation**, starting at **P2.1** — Spring Boot 3 / Java 21 skeleton with the TDD §5 package layout (`backend/`, root package `com.healthcare.hms`); Verify: `./mvnw -q compile` exits 0. Do **not** start it automatically (ENGINEERING_RULES §2.1) — wait for the user's instruction; then use the Phase Prompt (AI_DEVELOPMENT_GUIDE §6).
 
 ## 6. Working tree state (2026-09-30, phase close)
-- **Git:** `b883039 "Initial project setup"` on `main` (pushed by the user). Phase 1 on **`phase/01-infra`**, one conventional commit per task: `f5625a8` (P1.3 compose) · `5d71eaa` (P1.4 env template + gitignore) · `4e4b6c3` (P1.5 lint configs) · `607e6f9` (P1.6 smoke test) · `79274f1` (P1.7 README) · + this P1.8 docs commit. Merge/push of the phase branch is the user's cadence call (§13.3).
+- **Git:** `b883039 "Initial project setup"` on `main`. Phase 1 on **`phase/01-infra`**, one conventional commit per task: `f5625a8` (P1.3 compose) · `5d71eaa` (P1.4 env template + gitignore) · `4e4b6c3` (P1.5 lint configs) · `607e6f9` (P1.6 smoke test) · `79274f1` (P1.7 README) · `af1c339` (P1.8 close) — merged `--no-ff` into `main` as `893dc26` (user-granted permissions at phase close) and pushed with the phase branch.
 - **Build / checks right now (all green):** `./mvnw spotless:check` → 0 · `npm run lint` → 0 · `npm run typecheck` → 0 · `npm run format:check` → 0 · `docker compose ps` → 4/4 healthy · README quick-start re-run (P1.7) → healthy · `git grep` for local secret values → 0 matches · `git check-ignore -v .env` → matched (`.gitignore:2`).
 - **Doc checks:** `docs/` holds the 13 design docs; root holds `README.md` (P1.7) only.
 - **Build / tests right now:** no build or test suite exists (no application code). Checks that *do* run, executed this session, all pass:
@@ -52,7 +52,7 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 | Phase | Status | Commit | Notes / known issues |
 |---|---|---|---|
 | 0 | **Done ☑** | `b883039` (all Phase 0 docs committed by the user's initial commit) | P0.1–P0.8 all `[x]`; **approved by user 2026-09-30** — OQ-1…6 / TQ-1…7 accepted at defaults, CONF-1…6 + GAP-1 decided (§10); 13 docs moved from repo root into `docs/` |
-| 1 | **Done ☑** | `b883039` base on `main`; `f5625a8` → `79274f1` + P1.8 docs commit on `phase/01-infra` | P1.1–P1.8 all `[x]` (2026-09-30). Compose 4× healthy, loopback-only; MinIO via openvidu mirror (§9.13); native Redis service stopped+disabled (§9.14); Spotless + ESLint/Prettier/tsc green; README commands verified runnable; no secrets committed |
+| 1 | **Done ☑** | `b883039` base; `f5625a8` → `af1c339` on `phase/01-infra`; merged to `main` as `893dc26` (pushed) | P1.1–P1.8 all `[x]` (2026-09-30). Compose 4× healthy, loopback-only; MinIO via openvidu mirror (§9.13); native Redis service stopped+disabled (§9.14); Spotless + ESLint/Prettier/tsc green; README commands verified runnable; no secrets committed |
 | 2–30 | Not started ☐ | – | Checklists live in ROADMAP.md; a phase starts only when the previous one meets its DoD |
 
 ## 8. Decisions Locked
