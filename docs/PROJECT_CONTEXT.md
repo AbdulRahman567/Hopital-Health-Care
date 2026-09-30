@@ -27,19 +27,19 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 | Item | Value |
 |---|---|
 | Current phase | Phase 1 — Repository & Infrastructure (◐ in progress) |
-| Current task | P1.5 Lint/format configs — `[x]` (2026-09-30, both verify commands exit 0). Next: **P1.6** stack smoke test |
-| Last completed task | P1.5 Spotless (backend) + ESLint/Prettier/tsc (frontend) — `[x]`, `spotless:check` and `npm run lint` exit 0 |
+| Current task | P1.6 Stack smoke test — `[x]` (2026-09-30, 4× healthy, all ports loopback-bound). Next: **P1.7** README |
+| Last completed task | P1.6 Smoke test — `docker compose ps` all healthy; `compose config` shows 127.0.0.1 for every published port |
 | Last completed phase | Phase 0 — Documentation & Architecture (2026-09-30) |
 | Repository state | Branch `phase/01-infra` (from `main` @ `b883039`). Compose stack **running**: 4 healthy containers, all bound to 127.0.0.1. No app code yet, no CI |
 | Branch | `phase/01-infra` (active, Phase 1 work) · `main` (baseline, pushed) |
 | Last verified build | None — no build exists. Doc verification checks pass (see §6) |
 
 ## 5. Next action
-Phase 1 on `phase/01-infra`; compose stack running (infra profile). Next task **P1.6**: stack smoke test — `docker compose ps` all healthy; `docker compose config` shows every published port bound to 127.0.0.1 (no public management ports). Then P1.7 README, P1.8 phase close.
+Phase 1 on `phase/01-infra`; compose stack running and smoke-tested (P1.6). Next task **P1.7**: `README.md` at repo root with local setup commands that run as written — verify by copy-pasting the commands into a clean shell and watching the stack start (`down` + `up -d --wait` cycle, volumes preserved). Then P1.8 phase close.
 
 ## 6. Working tree state (2026-09-30)
-- **Git:** repository initialized by the user — `b883039 "Initial project setup"` on `main`, pushed to `origin/main`; Phase 1 work on **`phase/01-infra`** (ENGINEERING_RULES §10), one conventional commit per task: P1.3 → `f5625a8`, P1.4 → `5d71eaa`.
-- **Uncommitted changes (on `phase/01-infra`):** `docs/ROADMAP.md`, `docs/PROJECT_CONTEXT.md`, `.gitattributes` (LF for wrapper scripts), `backend/` (pom, mvnw, Spotless, package-info), `frontend/` (package.json + lock, ESLint/Prettier/tsconfig, env.d.ts), two `.gitkeep` deletions — committed together as the P1.5 change. `frontend/node_modules/` and `infra/.env` are gitignored (verified).
+- **Git:** repository initialized by the user — `b883039 "Initial project setup"` on `main`, pushed to `origin/main`; Phase 1 work on **`phase/01-infra`** (ENGINEERING_RULES §10), one conventional commit per task: P1.3 → `f5625a8`, P1.4 → `5d71eaa`, P1.5 → `4e4b6c3`.
+- **Uncommitted changes (on `phase/01-infra`):** `docs/ROADMAP.md`, `docs/PROJECT_CONTEXT.md` (P1.6 checkbox + evidence) — committed together as the P1.6 docs change. Tree otherwise clean; `infra/.env` and `frontend/node_modules/` gitignored.
 - **Build / tests right now:** no build or test suite exists (no application code). Checks that *do* run, executed this session, all pass:
   - `(Get-ChildItem docs -Filter *.md).Count` → **13**; root `*.md` → **0**
   - `Select-String PROJECT_CONTEXT.md 'fill in'` → **0 matches** (excluding the self-referencing command line)
