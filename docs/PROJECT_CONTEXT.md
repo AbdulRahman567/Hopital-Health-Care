@@ -27,31 +27,32 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 | Item | Value |
 |---|---|
 | Current phase | Phase 1 — Repository & Infrastructure (◐ in progress) |
-| Current task | P1.1 monorepo layout — `[x]` (2026-09-30). Next: **P1.2** `git init`, awaiting "continue" |
-| Last completed task | P1.1 Create monorepo layout — `[x]`, verified against TDD §5 |
+| Current task | P1.3 Docker Compose — `[x]` (2026-09-30, all 4 services healthy). Next: **P1.4** env templates, awaiting "continue" |
+| Last completed task | P1.3 Compose stack (mysql/redis/minio/nginx) — `[x]`, `up -d --wait` EXIT=0, smoke tests pass |
 | Last completed phase | Phase 0 — Documentation & Architecture (2026-09-30) |
-| Repository state | Planning only: 13 markdown files in `docs/`. **No code, no `backend/`, `frontend/`, `infra/`, no Docker, no CI** |
-| Branch | None — not a git repository (`git status` → "fatal: not a git repository") |
+| Repository state | Branch `phase/01-infra` (from `main` @ `b883039`). Compose stack **running**: 4 healthy containers, all bound to 127.0.0.1. No app code yet, no CI |
+| Branch | `phase/01-infra` (active, Phase 1 work) · `main` (baseline, pushed) |
 | Last verified build | None — no build exists. Doc verification checks pass (see §6) |
 
 ## 5. Next action
-Phase 1 in progress. Next task **P1.2**: `git init`, branch convention `phase/NN-short-name` (start with `phase/01-infra`), conventional-commit baseline, initial commit of the current tree — then P1.3 Docker Compose (infra default + `--profile full`, per CONF-2).
+Phase 1 on `phase/01-infra`; compose stack running (infra profile). Next task **P1.4**: `.env.example` with placeholders, `.gitignore` excludes `.env` (the ignore lines already exist — P1.4 completes the file + template). Verify: `git check-ignore -v .env` succeeds; repo-wide search finds no secret values.
 
 ## 6. Working tree state (2026-09-30)
-- **Git:** no repository, therefore **no branch, no commits, no `git status`** — the whole tree is unversioned. Git appears first at task P1.2.
-- **Uncommitted changes:** everything (no git yet). This session: moved all 13 docs from repo root into `docs/` (CONF-1), closed P0.8 with the user's approval, decided CONF-1…6 + GAP-1 (§10), edited `ROADMAP.md`, `PROJECT_CONTEXT.md`, `TDD.md`, `DEPLOYMENT.md`, `PRD.md`, and created the P1.1 layout: `backend/`, `frontend/`, `infra/`, `.github/workflows/` (each with `.gitkeep`). Prior sessions authored the planning set.
+- **Git:** repository initialized by the user — `b883039 "Initial project setup"` on `main`, pushed to `origin/main`; this session created and switched to **`phase/01-infra`** (convention: ENGINEERING_RULES §10). Conventional commits apply from the next commit on.
+- **Uncommitted changes (on `phase/01-infra`):** `docs/ROADMAP.md`, `docs/PROJECT_CONTEXT.md`, `.gitignore` (env ignore lines), `infra/docker-compose.yml`, `infra/nginx/nginx.conf`, `infra/.env` (gitignored — must never appear in `git status`).
 - **Build / tests right now:** no build or test suite exists (no application code). Checks that *do* run, executed this session, all pass:
   - `(Get-ChildItem docs -Filter *.md).Count` → **13**; root `*.md` → **0**
   - `Select-String PROJECT_CONTEXT.md 'fill in'` → **0 matches** (excluding the self-referencing command line)
   - ROADMAP overview rows → **31** (phases 0–30); task lines → **227**; Phase headings → **31**
   - PRD §5.1 + §13 (OQ-1…6), TDD §21 + §23 (TQ-1…7), ARCHITECTURE §10 (6 prohibitions), ENGINEERING_RULES §1 (10 non-negotiables), DESIGN_SYSTEM §4 (11 components) — all present
-- **Conclusion:** Phase 0 DoD **met** — P0.8 approved 2026-09-30. First commit still lands at P1.2 (`git init`), so nothing is proposed for commit yet.
+- **Conclusion:** Phase 0 DoD **met** (P0.8 approved); initial commit exists (`b883039`). Phase 1 work proceeds on `phase/01-infra`; merge/push cadence is the user's call at each phase's DoD (P1.8).
 
 ## 7. Phase log
 | Phase | Status | Commit | Notes / known issues |
 |---|---|---|---|
-| 0 | **Done ☑** | – (no git repository; first hash appears after P1.2) | P0.1–P0.8 all `[x]`; **approved by user 2026-09-30** — OQ-1…6 / TQ-1…7 accepted at defaults, CONF-1…6 + GAP-1 decided (§10); 13 docs moved from repo root into `docs/` |
-| 1–30 | Not started ☐ | – | Phase 0 is approved, so Phase 1 may start when instructed (P1.1 first); checklists live in ROADMAP.md |
+| 0 | **Done ☑** | `b883039` (all Phase 0 docs committed by the user's initial commit) | P0.1–P0.8 all `[x]`; **approved by user 2026-09-30** — OQ-1…6 / TQ-1…7 accepted at defaults, CONF-1…6 + GAP-1 decided (§10); 13 docs moved from repo root into `docs/` |
+| 1 | **In progress ◐** | base `b883039` on `main`; Phase 1 work on `phase/01-infra` | P1.1 `[x]`, P1.2 `[x]` (2026-09-30); next P1.3 (Docker Compose, CONF-2 topology) |
+| 2–30 | Not started ☐ | – | Checklists live in ROADMAP.md; a phase starts only when the previous one meets its DoD |
 
 ## 8. Decisions Locked
 - Modular monolith, shared-schema multi-tenancy (`tenant_id`)
@@ -76,6 +77,11 @@ Phase 1 in progress. Next task **P1.2**: `git init`, branch convention `phase/NN
 10. **CONF-5 → DATABASE §1 wins (`tenant_id` everywhere)** — `refresh_tokens`, `verification_tokens`, `user_roles`, `role_permissions` gain `tenant_id NOT NULL` + composite FKs; TDD §9.2 amended.
 11. **CONF-6 → accept proposed default** — Phases 5/9 send through the SMTP abstraction with a local dev transport; async retries + outbox arrive in Phase 18.
 12. **GAP-1 → reserved platform tenant** — platform admins are normal `users` rows under a fixed platform tenant id, excluded from tenant-scoped listings; reuses auth/RBAC.
+
+**Phase 1 (2026-09-30) — infra decisions made with the user:**
+13. **MinIO source for local dev → `openvidu/minio:RELEASE.2026-07-17T12-07-51Z`** — MinIO's official images were deleted from Docker Hub (repo archived), revoked on Quay (Sept 2026), and `dl.min.io` binaries return 410 Gone; user chose the openvidu mirror. Production remains AWS S3 (DEPLOYMENT §3) — unaffected. Swap is one line in `infra/docker-compose.yml` if a better source appears.
+14. **Native Windows Redis service → stopped + disabled** (user-approved) — it occupied 127.0.0.1:6379, blocking the compose Redis. Re-enable with `sc.exe start Redis` if ever needed; project Redis is the compose container.
+15. **MinIO volume path = image-declared `/bitnami/minio/data`** — openvidu image runs as uid 1001 with bitnami entrypoint; `/data` doesn't exist in the image, so Docker's root-owned mountpoint caused access-denied crash loops.
 
 ## 10. Open questions and assumptions
 **Assumptions I made (challenge if wrong):**
@@ -136,7 +142,7 @@ Registry of shared code to consult **before writing anything new**.
 ## 13. Gotchas (read before running anything)
 1. **Shell is Windows PowerShell 5.1.** `&&` is not supported — use `cmd1; if ($?) { cmd2 }`. UTF-8 glyphs (☐ ◐ — §) render as mojibake in the console; files are fine, verify with the Read tool, not `Get-Content`.
 2. **Nothing runs yet:** `docker compose up`, `./mvnw …`, `npm run dev`, `npm test` all fail — no compose file, no `backend/`, no `frontend/`. ROADMAP `Verify:` commands are future targets (assumption A4).
-3. **No git:** every "commit" instruction (P1.2+) is premature until the repo exists; commit hashes in §7 stay `–` until then. Do not `git init` before Phase 0 approval (P1.2 is the task that does it, on branch `phase/01-…`).
+3. **Git exists now:** repo pushed at `b883039` on `main`; Phase 1 work happens on `phase/01-infra`. Push/merge cadence is the user's call — never force-push or rewrite pushed history. Commit messages follow conventional commits from here on (ENGINEERING_RULES §10).
 4. **File count is 13, not 14** — trust a directory listing, not any older note.
 5. **Docs live in `docs/`** (moved there 2026-09-30, per user instruction — CONF-1 decided: follow TDD §5); `.github/`, `infra/` do not exist yet (created in Phase 1).
 6. **Phase 0 is closed (approved 2026-09-30)** — Phase 1 starts only when instructed (P1.1 first). All CONF-*/GAP-1 were decided by the user (§10); never change a decided answer silently — raise it instead.
