@@ -1,3 +1,7 @@
 # Shell scripts keep LF endings so they run in Git Bash / CI on any OS
 mvnw text eol=lf
 *.sh text eol=lf
+
+# Frontend source/config stays LF so `prettier --check` (endOfLine: lf)
+# passes in Windows worktrees where core.autocrlf would write CRLF
+frontend/** text eol=lf
