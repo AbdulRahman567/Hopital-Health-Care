@@ -1,0 +1,10 @@
+# Production profile. Swagger/OpenAPI is disabled (P2.6) and returns 404.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    com.healthcare.hms: INFO

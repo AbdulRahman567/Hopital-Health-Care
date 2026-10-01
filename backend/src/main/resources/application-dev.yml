@@ -1,0 +1,4 @@
+# Development profile (default). Secrets still come from the environment.
+logging:
+  level:
+    com.healthcare.hms: DEBUG

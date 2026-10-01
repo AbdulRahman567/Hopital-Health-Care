@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: healthcare-hms
+  profiles:
+    default: dev
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+hms:
+  security:
+    # Required from the environment (HMS_JWT_SECRET). Startup fails fast when
+    # missing, empty or a placeholder value (see JwtSecretValidator).
+    jwt-secret: ${HMS_JWT_SECRET:}
