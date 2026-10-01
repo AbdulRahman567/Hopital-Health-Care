@@ -121,6 +121,15 @@ Each phase is small, verifiable and ends with the Definition of Done. **Only the
 - P2.8 ✓ `./mvnw test` exit 0 — **30 tests, 0 failures** (`8+10+2+4+2+4`; OpenApi's 2 run in `@Nested` classes). Surefire injects `hms.security.jwt-secret` test-only value so every `@SpringBootTest` context passes P2.7 validation (cmd-line `--` args still override it)
 - P2.9 ✓ this docs commit (ROADMAP evidence + PROJECT_CONTEXT §4–§7/§12–§13 + `docs/progress.md` refreshed; API/error docs unchanged — envelopes behave exactly as API.md §3 specifies)
 
+**Re-verification — session 2026-10-02 (plan §3.4 option A: verify & reuse `phase/02-backend`; stale `target/` cleaned first):**
+- `./mvnw -q clean` → exit 0 · `./mvnw -q compile` → exit 0 · `./mvnw -q spotless:check` → exit 0
+- Each named verify re-run individually: `ResponseEnvelopeTest` PASS · `ApiExceptionHandlerTest` PASS · `JsonLoggingTest` PASS · `ActuatorSecurityTest` PASS · `OpenApiVisibilityTest` PASS · `SecretValidationTest` PASS
+- `./mvnw test` → **BUILD SUCCESS — 30 tests, 0 failures, 0 skipped** (all six test classes present in surefire reports)
+- Boot smoke (`HMS_JWT_SECRET` set): app starts · `/actuator/health` → **200** `{"status":"UP","groups":["liveness","readiness"]}` · dev `/swagger-ui/index.html` → **200** · `/actuator/env` → **401** · `/api/v1/patients` → **401**
+- Fail-fast re-checked live: `spring-boot:run` with no `HMS_JWT_SECRET` → startup aborts ("refuses to start without it")
+- Secret scan: `git grep` → only the deliberately labelled surefire **test-only-synthetic** value + docs; `infra/.env` ignored (`!! infra/.env`); no real credential committed
+- **Base entities (plan §10.2):** deferred to Phase 3 with the first migration (`BaseEntity`/`TenantOwnedEntity`) — no schema exists yet, so no entities were invented in Phase 2
+
 ### Phase 3 — Database Foundation
 - **Scope:** Flyway setup, baseline migrations (tenants, users, roles, permissions, audit base), naming/index conventions.
 - **Exit:** Migrations run on an empty DB and the Testcontainers integration test passes; the CI stage lands in P26.3 (CONF-4 decided 2026-09-30).
