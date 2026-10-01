@@ -11,7 +11,7 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 - **Infra:** Docker, Docker Compose, Nginx, MinIO (local), AWS S3 (prod)
 - **Deploy target:** Vercel (frontend), AWS EC2 (backend), managed MySQL, S3
 
-## 3. Document Map (authoritative — 13 files, all in `docs/`)
+## 3. Document Map (authoritative — 13 design docs, all in `docs/`; plus `docs/progress.md`, the session tracker — not a Phase 0 deliverable)
 | Doc | Purpose |
 |---|---|
 | PRD.md | What and why |
@@ -145,7 +145,7 @@ Registry of shared code to consult **before writing anything new**.
 1. **Shell is Windows PowerShell 5.1.** `&&` is not supported — use `cmd1; if ($?) { cmd2 }` or separate lines. UTF-8 glyphs (☐ ◐ — §) render as mojibake in the console; files are fine, verify with the Read tool, not `Get-Content`. Native stderr (e.g., `java -version`) shows up as a red `NativeCommandError` — not a failure.
 2. **What runs today (Phase 1 complete):** `docker compose up -d --wait` (4 healthy), `./mvnw spotless:check`, `npm run lint`. What does **NOT** yet exist: app code — `mvn spring-boot:run` (Phase 2), `npm run dev`/`build` (Phase 7), `--profile full` images (P2/P7). ROADMAP `Verify:` names for future tests are targets to create (A4).
 3. **Git:** repo pushed at `b883039` on `main`; Phase 1 committed on `phase/01-infra` (`f5625a8`…P1.8). Push/merge cadence is the user's call — never force-push or rewrite pushed history. Conventional commits from here on (ENGINEERING_RULES §10).
-4. **Design-doc count is 13, not 14** — that is `docs/*.md` only; the root `README.md` (P1.7) is separate and does not change the 13.
+4. **Design-doc count is 13, not 14** — the 13 = Phase 0 deliverables. `docs/` also holds `progress.md` (session tracker, added 2026-10-01 → directory now has 14 `.md` files); root holds `README.md` (P1.7). Neither changes the 13 deliverables.
 5. **Docs live in `docs/`** (CONF-1); `infra/` exists (compose, nginx, `.env.example`); `backend/` and `frontend/` hold lint scaffolding only.
 6. **Phase 0 and Phase 1 are closed** (both approved/done 2026-09-30). Next phase starts only on instruction; never change a decided answer silently — raise it instead.
 7. **14 docs claimed anywhere** → it's the same DOC-1 counting bug, not a second source of truth.
