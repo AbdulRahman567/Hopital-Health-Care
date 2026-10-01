@@ -30,15 +30,15 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 | Current task | P2.9 Phase close — `[x]` (2026-10-01). Next: **Phase 3 / P3.1** (Flyway integration) — starts only on user instruction |
 | Last completed task | P2.9 PROJECT_CONTEXT phase log + ROADMAP evidence + progress.md — `[x]` |
 | Last completed phase | **Phase 2** (2026-10-01); before it Phase 1 (2026-09-30) |
-| Repository state | `main` = `3c35b31` (Phase 2 merge hash recorded in the follow-up docs commit on `main`); tree clean; backend **30 tests green**; compose stack 4× healthy |
-| Branch | `main` (Phase 1 merged @ `893dc26`) · `phase/02-backend` (P2.1…P2.9: `43dd558` → `5cab819` + this docs commit) |
+| Repository state | `main` = `0ae4501` (JDTLS `-parameters` fix) on top of merge `9e51c07` (52 files +1478); tree clean; backend **30 tests green** incl. post-merge no-clean re-run; compose stack 4× healthy |
+| Branch | `main` (Phase 2 merged @ `9e51c07`, pushed) · `phase/02-backend` (P2.1…P2.9: `43dd558` → `620e161`) |
 | Last verified build | `backend`: `./mvnw test` → 30 tests, 0 failures · `./mvnw spotless:check` exit 0 · `frontend`: `npm run lint` / `typecheck` / `format:check` exit 0 |
 
 ## 5. Next action
 **Phase 2 is complete (2026-10-01).** Next phase: **Phase 3 — Database Foundation**, starting at **P3.1** — Flyway integration with `ddl-auto=validate` in all profiles; Verify: `./mvnw test -Dtest=FlywayStartupTest` (context starts, schema validated). Do **not** start it automatically (ENGINEERING_RULES §2.1) — wait for the user's instruction; then use the Phase Prompt (AI_DEVELOPMENT_GUIDE §6).
 
 ## 6. Working tree state (2026-10-01, phase 2 close)
-- **Git:** Phase 2 on **`phase/02-backend`**, one conventional commit per task: `43dd558` (P2.1 skeleton) · `85596ae` (P2.2 envelope) · `557a8df` (P2.3 exception handler) · `d7ae274` (P2.4 logging) · `08b838f` (P2.5 security) · `b8f66fe` (P2.6 OpenAPI) · `5cab819` (P2.7 secret validation) + this docs commit (P2.9; P2.8 ran green — no file changes, evidence in ROADMAP). Merge `--no-ff` into `main` follows; merge hash recorded by a follow-up docs commit on `main` (same pattern as Phase 1: `893dc26` → `0bf724b`).
+- **Git:** Phase 2 on **`phase/02-backend`**, one conventional commit per task: `43dd558` (P2.1 skeleton) · `85596ae` (P2.2 envelope) · `557a8df` (P2.3 exception handler) · `d7ae274` (P2.4 logging) · `08b838f` (P2.5 security) · `b8f66fe` (P2.6 OpenAPI) · `5cab819` (P2.7 secret validation) · `620e161` (P2.9 docs; P2.8 ran green — no file changes, evidence in ROADMAP) — merged `--no-ff` into `main` as `9e51c07`, then `0ae4501` (JDTLS `-parameters` fix, found by the post-merge suite) and this record-merge commit (Phase 1 pattern: `893dc26` → `0bf724b`).
 - **Build / checks right now (all green):** `./mvnw test` → **30 tests, 0 failures** (8+10+2+4+2+4; surefire reports `target/surefire-reports/`) · `./mvnw spotless:check` → 0 · `npm run lint` / `typecheck` / `format:check` → 0 · `docker compose ps` → 4/4 healthy.
 - **Backend now exists:** `com.healthcare.hms` root package with TDD §5 modules seeded (`package-info.java` × 20), `HealthcareHmsApplication`, profile configs (`application{,-dev,-prod}.yml`), `logback-spring.xml`.
 - **Conclusion:** Phase 2 DoD met — Exit criteria ("App boots; error and envelope tests pass; actuator restricted") all satisfied by P2.5–P2.8 evidence; merge/push cadence follows the user's standing phase-close instruction.
@@ -48,7 +48,7 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 |---|---|---|---|
 | 0 | **Done ☑** | `b883039` (all Phase 0 docs committed by the user's initial commit) | P0.1–P0.8 all `[x]`; **approved by user 2026-09-30** — OQ-1…6 / TQ-1…7 accepted at defaults, CONF-1…6 + GAP-1 decided (§10); 13 docs moved from repo root into `docs/` |
 | 1 | **Done ☑** | `b883039` base; `f5625a8` → `af1c339` on `phase/01-infra`; merged to `main` as `893dc26` (pushed) | P1.1–P1.8 all `[x]` (2026-09-30). Compose 4× healthy, loopback-only; MinIO via openvidu mirror (§9.13); native Redis service stopped+disabled (§9.14); Spotless + ESLint/Prettier/tsc green; README commands verified runnable; no secrets committed |
-| 2 | **Done ☑** | `phase/02-backend`: `43dd558` → `5cab819` + P2.9 docs commit; merged `--no-ff` to `main` (hash in the follow-up docs commit) | P2.1–P2.9 all `[x]` (2026-10-01). 30 tests green; deny-by-default `SecurityConfig`; swagger dev-only (404 in prod); fail-fast `JwtSecretValidator`; surefire injects test-only JWT secret (§13); evidence in ROADMAP Phase 2 block |
+| 2 | **Done ☑** | `phase/02-backend`: `43dd558` → `620e161`; merged to `main` as `9e51c07` (pushed) | P2.1–P2.9 all `[x]` (2026-10-01). 30 tests green; deny-by-default `SecurityConfig`; swagger dev-only (404 in prod); fail-fast `JwtSecretValidator`; surefire injects test-only JWT secret (§13); evidence in ROADMAP Phase 2 block |
 | 3–30 | Not started ☐ | – | Checklists live in ROADMAP.md; a phase starts only when the previous one meets its DoD |
 
 ## 8. Decisions Locked
@@ -155,7 +155,7 @@ Registry of shared code to consult **before writing anything new**.
 10. **`infra/.env` is gitignored and never in `git status`** — if it ever appears, stop and fix `.gitignore` before committing.
 11. **JWT secret:** surefire injects a test-only `hms.security.jwt-secret` so `@SpringBootTest` contexts pass `JwtSecretValidator`; running the app itself needs `--hms.security.jwt-secret=<48+ chars>` (or `HMS_JWT_SECRET`) — missing/placeholder/short secrets fail startup by design (P2.7). Never commit a real secret.
 12. **Spring CLI-style args in tests need the `--` prefix** (`runApp("--key=value")`) — without it Spring ignores the arg (P2.7 burned an hour on this).
-13. **Compiler needs `-parameters`** (set in `pom.xml`) or `@RequestParam` names are lost — if param-name errors appear, run `./mvnw clean` once; the flag only applies to recompiled classes.
+13. **Two compilers write `backend/target/`:** Maven (with `-parameters`) **and** VS Code's redhat.java JDTLS auto-build — JDTLS rewrites a class ~0.6s after any source change and always beats Maven's staleness check, so Maven then reports "Nothing to compile". JDTLS used to emit no `MethodParameters` → `IllegalArgumentException: ... parameter name information not available` and 500s where 422/400 were expected. **Fixed** by `backend/.settings/org.eclipse.jdt.core.prefs` (`codegen.methodParameters=generate`) — keep that file; recovery if it ever recurs: `./mvnw clean test`.
 14. **Dependency names:** `spring-data-commons` (there is no `spring-boot-starter-data-commons`); logstash encoder 9.0 exposes `LogstashEncoder` (no `LoggingEventEncoder`).
 
 ## 14. Handoff Notes

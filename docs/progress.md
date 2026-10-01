@@ -13,7 +13,7 @@
 |---|---|---|
 | 0 — Documentation & Architecture | ☑ **Done** | Approved 2026-09-30; 13 design docs in `docs/`; `b883039` |
 | 1 — Repository & Infrastructure | ☑ **Done** | 8/8 tasks; merged `893dc26` → `ff90709`; pushed; deep tests green |
-| 2 — Backend Foundation | ☑ **Done** | 9/9 tasks (2026-10-01); 30 tests green; merged `--no-ff` → `main` (hash in follow-up docs commit) |
+| 2 — Backend Foundation | ☑ **Done** | 9/9 tasks (2026-10-01); 30 tests green; merged `9e51c07` → `main`, pushed |
 | 3 — Database Foundation | ☐ **Next** | Starts at **P3.1** (Flyway, `ddl-auto=validate`) on user instruction only |
 | 4–30 | ☐ Not started | Checklists in `ROADMAP.md`; one phase at a time |
 
@@ -58,8 +58,10 @@
 | `08b838f` | P2.5 deny-by-default security, health public |
 | `b8f66fe` | P2.6 OpenAPI dev-only (404 in prod) |
 | `5cab819` | P2.7 fail-fast JWT secret validation |
-| (this commit) | P2.9 docs: ROADMAP ☑ + PROJECT_CONTEXT + progress.md (P2.8 suite green: 30 tests) |
-| (follow-up on `main`) | merge `--no-ff` → `main` + record merge hash |
+| `620e161` | P2.9 docs: ROADMAP ☑ + PROJECT_CONTEXT + progress.md (P2.8 suite green: 30 tests) |
+| `9e51c07` | merge `--no-ff` phase/02-backend → main (52 files, +1478) |
+| `0ae4501` | fix: JDTLS also emits `-parameters` (post-merge suite race — see §5.4) |
+| (this commit) | docs: record phase 2 merge + JDTLS fix |
 
 ## 4. Next session — how to resume
 
@@ -74,7 +76,7 @@
 1. **PowerShell 5.1:** no `&&`; console mangles UTF-8 glyphs (`☑`, `§`) — trust files via Read tool, not `Get-Content`.
 2. **Host ports must be free:** 3306, 6379, 9000, 9001, 80. Native Windows Redis service was stopped+disabled for 6379 (revert: `sc.exe start Redis`).
 3. **MinIO image = `openvidu/minio:RELEASE.2026-07-17T12-07-51Z`** (official images deleted everywhere) — one-line swap in compose if a better source appears; prod stays AWS S3.
-4. **Backend test rule:** surefire injects a test-only `hms.security.jwt-secret`; running the app itself needs `--hms.security.jwt-secret=<48+ chars>` (or `HMS_JWT_SECRET`). Spring CLI args in tests must have the `--` prefix. Keep `mvnw`/`*.sh`/`frontend/**` LF (`.gitattributes`).
+4. **Backend test rule:** surefire injects a test-only `hms.security.jwt-secret`; running the app itself needs `--hms.security.jwt-secret=<48+ chars>` (or `HMS_JWT_SECRET`). Spring CLI args in tests must have the `--` prefix. **Two compilers write `target/`** — Maven and VS Code's JDTLS (auto-build wins every race); `backend/.settings/org.eclipse.jdt.core.prefs` keeps JDTLS `-parameters`-compatible — never delete it; recovery: `.\mvnw clean test`. Keep `mvnw`/`*.sh`/`frontend/**` LF (`.gitattributes`).
 5. **Never commit `infra/.env`** (gitignored). Never start the next phase automatically (ENGINEERING_RULES §2.1).
 
 ## 6. Session log
@@ -84,4 +86,5 @@
 | ≤2026-09-30 | Phase 0 authored, cross-reviewed, approved (OQ/TQ defaults, CONF-1…6 + GAP-1 decided) |
 | 2026-09-30 | Phase 1 started: layout, git init/push, compose stack (MinIO source + Redis port blockers resolved with user approval) |
 | 2026-10-01 | Phase 1 P1.4–P1.8 complete → merged & pushed; 3 deep tests pass; CRLF fix `ff90709` — **phase closed** |
-| 2026-10-01 | Phase 2 P2.1–P2.9 complete on `phase/02-backend`; 30 tests green; docs closed — **phase closing (merge + push)** |
+| 2026-10-01 | Phase 2 P2.1–P2.9 complete on `phase/02-backend`; 30 tests green; docs closed — merged `9e51c07` |
+| 2026-10-01 | Post-merge suite failed (2× 500s): VS Code JDTLS auto-build raced Maven without `-parameters` → fixed `0ae4501` (`.settings` prefs); no-clean re-run green — **phase closed** |
