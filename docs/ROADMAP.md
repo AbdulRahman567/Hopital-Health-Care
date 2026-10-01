@@ -14,7 +14,7 @@ Each phase is small, verifiable and ends with the Definition of Done. **Only the
 |---|---|---|---|
 | 0 | Documentation & Architecture | – | ☑ |
 | 1 | Repository & Infrastructure | 0 | ☑ |
-| 2 | Backend Foundation | 1 | ☐ |
+| 2 | Backend Foundation | 1 | ☑ |
 | 3 | Database Foundation | 2 | ☐ |
 | 4 | Multi-Tenancy | 3 | ☐ |
 | 5 | Authentication | 4 | ☐ |
@@ -100,15 +100,26 @@ Each phase is small, verifiable and ends with the Definition of Done. **Only the
 - **Scope:** Spring Boot skeleton, package structure, response envelope, error handling, pagination helpers, base entities, OpenAPI (dev only), JSON logging, health endpoints.
 - **Exit:** App boots; error and envelope tests pass; actuator restricted.
 
-- [ ] P2.1 Spring Boot 3 / Java 21 skeleton with TDD §5 package layout | Layer: BE | Depends: P1.5 | Verify: `./mvnw -q compile` exits 0
-- [ ] P2.2 Response envelope + pagination helpers per API.md §3 | Layer: BE | Depends: P2.1 | Verify: `./mvnw test -Dtest=ResponseEnvelopeTest` passes
-- [ ] P2.3 Centralized `@RestControllerAdvice` with field-level validation errors | Layer: BE | Depends: P2.2 | Verify: `./mvnw test -Dtest=ApiExceptionHandlerTest` asserts 422 + `error.fields[]` naming the exact field
-- [ ] P2.4 Structured JSON logging with `traceId`, no PHI/secrets | Layer: BE | Depends: P2.2 | Verify: `./mvnw test -Dtest=JsonLoggingTest` asserts `traceId` present in output
-- [ ] P2.5 Health endpoints + actuator restricted (only health public) | Layer: BE | Depends: P2.1 | Verify: `./mvnw test -Dtest=ActuatorSecurityTest` (health 200, other endpoints 401/404)
-- [ ] P2.6 OpenAPI enabled in dev only, disabled/protected in prod profile | Layer: BE | Depends: P2.1 | Verify: `./mvnw test -Dtest=OpenApiVisibilityTest` (dev 200, prod profile 404)
-- [ ] P2.7 Startup secret validation: app fails to start on missing/placeholder JWT secret | Layer: BE | Depends: P2.1 | Verify: `./mvnw test -Dtest=SecretValidationTest` asserts context fails to load
-- [ ] P2.8 Unit tests for envelope, errors, pagination helpers | Layer: BE | Depends: P2.3 | Verify: `./mvnw test` → BUILD SUCCESS, 0 failures
-- [ ] P2.9 Update PROJECT_CONTEXT phase log (+ API/error docs if behavior differs) | Layer: DOC | Depends: P2.8 | Verify: phase log row for Phase 2 committed
+- [x] P2.1 Spring Boot 3 / Java 21 skeleton with TDD §5 package layout | Layer: BE | Depends: P1.5 | Verify: `./mvnw -q compile` exits 0
+- [x] P2.2 Response envelope + pagination helpers per API.md §3 | Layer: BE | Depends: P2.1 | Verify: `./mvnw test -Dtest=ResponseEnvelopeTest` passes
+- [x] P2.3 Centralized `@RestControllerAdvice` with field-level validation errors | Layer: BE | Depends: P2.2 | Verify: `./mvnw test -Dtest=ApiExceptionHandlerTest` asserts 422 + `error.fields[]` naming the exact field
+- [x] P2.4 Structured JSON logging with `traceId`, no PHI/secrets | Layer: BE | Depends: P2.2 | Verify: `./mvnw test -Dtest=JsonLoggingTest` asserts `traceId` present in output
+- [x] P2.5 Health endpoints + actuator restricted (only health public) | Layer: BE | Depends: P2.1 | Verify: `./mvnw test -Dtest=ActuatorSecurityTest` (health 200, other endpoints 401/404)
+- [x] P2.6 OpenAPI enabled in dev only, disabled/protected in prod profile | Layer: BE | Depends: P2.1 | Verify: `./mvnw test -Dtest=OpenApiVisibilityTest` (dev 200, prod profile 404)
+- [x] P2.7 Startup secret validation: app fails to start on missing/placeholder JWT secret | Layer: BE | Depends: P2.1 | Verify: `./mvnw test -Dtest=SecretValidationTest` asserts context fails to load
+- [x] P2.8 Unit tests for envelope, errors, pagination helpers | Layer: BE | Depends: P2.3 | Verify: `./mvnw test` → BUILD SUCCESS, 0 failures
+- [x] P2.9 Update PROJECT_CONTEXT phase log (+ API/error docs if behavior differs) | Layer: DOC | Depends: P2.8 | Verify: phase log row for Phase 2 committed
+
+**Verification evidence — Phase 2 (session 2026-10-01):**
+- P2.1 ✓ `./mvnw -q compile` exit 0 (commit `43dd558`) — `HealthcareHmsApplication`, `application{,-dev,-prod}.yml`, `logback-spring.xml`, 20 `package-info.java` seeding TDD §5 modules (`common{,api,exception,logging}`, `config`, `tenant`, `auth`, `authz`, `organization`, `staff`, `patient`, `appointment`, `clinical`, `history`, `prescription`, `lab`, `document`, `billing`, `notification`, `audit`, `search`)
+- P2.2 ✓ `ResponseEnvelopeTest` → **8 tests, 0 failures** exit 0 (commit `85596ae`) — `ApiResponse<T>` NON_NULL, `PageMeta`/`PaginationMapper`/`PageParams` (default 20, max 100, page ≥0), `TraceIds`
+- P2.3 ✓ `ApiExceptionHandlerTest` → **10 tests, 0 failures** exit 0 (commit `557a8df`) — 422 + `fields[]` naming the exact field, unknown JSON property 422, malformed 400, type mismatch 400, missing param 422, 404/409/500 envelopes, traceId surfaced (standalone MockMvc with `FAIL_ON_UNKNOWN_PROPERTIES` mapper mirroring app config)
+- P2.4 ✓ `JsonLoggingTest` → **2 tests, 0 failures** exit 0 (commit `d7ae274`) — `TraceIdFilter` (X-Request-Id sanitize/generate → MDC), `request_completed` debug line without query string; encoder 9.0 uses `LogstashEncoder` (no `LoggingEventEncoder` class)
+- P2.5 ✓ `ActuatorSecurityTest` → **4 tests, 0 failures** exit 0 (commit `08b838f`) — health 200 UP; metrics/env/beans 401; `/api/v1/patients` 401 UNAUTHENTICATED envelope; no health components leak. `SecurityConfig` deny-by-default (`anyRequest().denyAll()`, CSRF kept `withDefaults()`, JSON 401/403 entry points)
+- P2.6 ✓ `OpenApiVisibilityTest` → **2 tests, 0 failures** exit 0 (commit `b8f66fe`) — dev profile: swagger-ui + `/v3/api-docs` 200; `@Nested` `@SpringBootTest(properties="spring.profiles.active=prod")`: both 404 (springdoc `enabled=false` + security permits the paths so its own 404 shows)
+- P2.7 ✓ `SecretValidationTest` → **4 tests, 0 failures** exit 0 (commit `5cab819`) — `JwtSecretValidator` (min 32 chars, placeholder deny-list, never echoes secret): missing/placeholder/too-short each fail context startup with the exact message, 48-char secret validates. **Gotcha:** test args must be `--key=value` (leading `--`) or Spring ignores them and the surefire-provided secret wins
+- P2.8 ✓ `./mvnw test` exit 0 — **30 tests, 0 failures** (`8+10+2+4+2+4`; OpenApi's 2 run in `@Nested` classes). Surefire injects `hms.security.jwt-secret` test-only value so every `@SpringBootTest` context passes P2.7 validation (cmd-line `--` args still override it)
+- P2.9 ✓ this docs commit (ROADMAP evidence + PROJECT_CONTEXT §4–§7/§12–§13 + `docs/progress.md` refreshed; API/error docs unchanged — envelopes behave exactly as API.md §3 specifies)
 
 ### Phase 3 — Database Foundation
 - **Scope:** Flyway setup, baseline migrations (tenants, users, roles, permissions, audit base), naming/index conventions.

@@ -26,34 +26,30 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 ## 4. Current State
 | Item | Value |
 |---|---|
-| Current phase | Phase 1 — Repository & Infrastructure (**Done ☑** 2026-09-30) |
-| Current task | P1.8 Phase close — `[x]` (2026-09-30). Next: **Phase 2 / P2.1** (Spring Boot skeleton) — starts only on user instruction |
-| Last completed task | P1.8 PROJECT_CONTEXT local setup + phase log + ROADMAP overview — `[x]` |
-| Last completed phase | **Phase 1** (2026-09-30); before it Phase 0 (2026-09-30) |
-| Repository state | `main` = `893dc26` (merge of `phase/01-infra`, 23 files +2521); tree clean; compose stack **4× healthy**, every port 127.0.0.1; lint green |
-| Branch | `main` (Phase 1 merged @ `893dc26`, pushed) · `phase/01-infra` (task commits `f5625a8`…`af1c339`) |
-| Last verified build | `backend`: `./mvnw spotless:check` exit 0 · `frontend`: `npm run lint` / `typecheck` / `format:check` exit 0 — no application build yet (arrives Phase 2/7) |
+| Current phase | Phase 2 — Backend Foundation (**Done ☑** 2026-10-01) |
+| Current task | P2.9 Phase close — `[x]` (2026-10-01). Next: **Phase 3 / P3.1** (Flyway integration) — starts only on user instruction |
+| Last completed task | P2.9 PROJECT_CONTEXT phase log + ROADMAP evidence + progress.md — `[x]` |
+| Last completed phase | **Phase 2** (2026-10-01); before it Phase 1 (2026-09-30) |
+| Repository state | `main` = `3c35b31` (Phase 2 merge hash recorded in the follow-up docs commit on `main`); tree clean; backend **30 tests green**; compose stack 4× healthy |
+| Branch | `main` (Phase 1 merged @ `893dc26`) · `phase/02-backend` (P2.1…P2.9: `43dd558` → `5cab819` + this docs commit) |
+| Last verified build | `backend`: `./mvnw test` → 30 tests, 0 failures · `./mvnw spotless:check` exit 0 · `frontend`: `npm run lint` / `typecheck` / `format:check` exit 0 |
 
 ## 5. Next action
-**Phase 1 is complete (2026-09-30).** Next phase: **Phase 2 — Backend Foundation**, starting at **P2.1** — Spring Boot 3 / Java 21 skeleton with the TDD §5 package layout (`backend/`, root package `com.healthcare.hms`); Verify: `./mvnw -q compile` exits 0. Do **not** start it automatically (ENGINEERING_RULES §2.1) — wait for the user's instruction; then use the Phase Prompt (AI_DEVELOPMENT_GUIDE §6).
+**Phase 2 is complete (2026-10-01).** Next phase: **Phase 3 — Database Foundation**, starting at **P3.1** — Flyway integration with `ddl-auto=validate` in all profiles; Verify: `./mvnw test -Dtest=FlywayStartupTest` (context starts, schema validated). Do **not** start it automatically (ENGINEERING_RULES §2.1) — wait for the user's instruction; then use the Phase Prompt (AI_DEVELOPMENT_GUIDE §6).
 
-## 6. Working tree state (2026-09-30, phase close)
-- **Git:** `b883039 "Initial project setup"` on `main`. Phase 1 on **`phase/01-infra`**, one conventional commit per task: `f5625a8` (P1.3 compose) · `5d71eaa` (P1.4 env template + gitignore) · `4e4b6c3` (P1.5 lint configs) · `607e6f9` (P1.6 smoke test) · `79274f1` (P1.7 README) · `af1c339` (P1.8 close) — merged `--no-ff` into `main` as `893dc26` (user-granted permissions at phase close) and pushed with the phase branch.
-- **Build / checks right now (all green):** `./mvnw spotless:check` → 0 · `npm run lint` → 0 · `npm run typecheck` → 0 · `npm run format:check` → 0 · `docker compose ps` → 4/4 healthy · README quick-start re-run (P1.7) → healthy · `git grep` for local secret values → 0 matches · `git check-ignore -v .env` → matched (`.gitignore:2`).
-- **Doc checks:** `docs/` holds the 13 design docs; root holds `README.md` (P1.7) only.
-- **Build / tests right now:** no build or test suite exists (no application code). Checks that *do* run, executed this session, all pass:
-  - `(Get-ChildItem docs -Filter *.md).Count` → **13**; root `*.md` → **0**
-  - `Select-String PROJECT_CONTEXT.md 'fill in'` → **0 matches** (excluding the self-referencing command line)
-  - ROADMAP overview rows → **31** (phases 0–30); task lines → **227**; Phase headings → **31**
-  - PRD §5.1 + §13 (OQ-1…6), TDD §21 + §23 (TQ-1…7), ARCHITECTURE §10 (6 prohibitions), ENGINEERING_RULES §1 (10 non-negotiables), DESIGN_SYSTEM §4 (11 components) — all present
-- **Conclusion:** Phase 0 DoD **met** (P0.8 approved); initial commit exists (`b883039`). Phase 1 work proceeds on `phase/01-infra`; merge/push cadence is the user's call at each phase's DoD (P1.8).
+## 6. Working tree state (2026-10-01, phase 2 close)
+- **Git:** Phase 2 on **`phase/02-backend`**, one conventional commit per task: `43dd558` (P2.1 skeleton) · `85596ae` (P2.2 envelope) · `557a8df` (P2.3 exception handler) · `d7ae274` (P2.4 logging) · `08b838f` (P2.5 security) · `b8f66fe` (P2.6 OpenAPI) · `5cab819` (P2.7 secret validation) + this docs commit (P2.9; P2.8 ran green — no file changes, evidence in ROADMAP). Merge `--no-ff` into `main` follows; merge hash recorded by a follow-up docs commit on `main` (same pattern as Phase 1: `893dc26` → `0bf724b`).
+- **Build / checks right now (all green):** `./mvnw test` → **30 tests, 0 failures** (8+10+2+4+2+4; surefire reports `target/surefire-reports/`) · `./mvnw spotless:check` → 0 · `npm run lint` / `typecheck` / `format:check` → 0 · `docker compose ps` → 4/4 healthy.
+- **Backend now exists:** `com.healthcare.hms` root package with TDD §5 modules seeded (`package-info.java` × 20), `HealthcareHmsApplication`, profile configs (`application{,-dev,-prod}.yml`), `logback-spring.xml`.
+- **Conclusion:** Phase 2 DoD met — Exit criteria ("App boots; error and envelope tests pass; actuator restricted") all satisfied by P2.5–P2.8 evidence; merge/push cadence follows the user's standing phase-close instruction.
 
 ## 7. Phase log
 | Phase | Status | Commit | Notes / known issues |
 |---|---|---|---|
 | 0 | **Done ☑** | `b883039` (all Phase 0 docs committed by the user's initial commit) | P0.1–P0.8 all `[x]`; **approved by user 2026-09-30** — OQ-1…6 / TQ-1…7 accepted at defaults, CONF-1…6 + GAP-1 decided (§10); 13 docs moved from repo root into `docs/` |
 | 1 | **Done ☑** | `b883039` base; `f5625a8` → `af1c339` on `phase/01-infra`; merged to `main` as `893dc26` (pushed) | P1.1–P1.8 all `[x]` (2026-09-30). Compose 4× healthy, loopback-only; MinIO via openvidu mirror (§9.13); native Redis service stopped+disabled (§9.14); Spotless + ESLint/Prettier/tsc green; README commands verified runnable; no secrets committed |
-| 2–30 | Not started ☐ | – | Checklists live in ROADMAP.md; a phase starts only when the previous one meets its DoD |
+| 2 | **Done ☑** | `phase/02-backend`: `43dd558` → `5cab819` + P2.9 docs commit; merged `--no-ff` to `main` (hash in the follow-up docs commit) | P2.1–P2.9 all `[x]` (2026-10-01). 30 tests green; deny-by-default `SecurityConfig`; swagger dev-only (404 in prod); fail-fast `JwtSecretValidator`; surefire injects test-only JWT secret (§13); evidence in ROADMAP Phase 2 block |
+| 3–30 | Not started ☐ | – | Checklists live in ROADMAP.md; a phase starts only when the previous one meets its DoD |
 
 ## 8. Decisions Locked
 - Modular monolith, shared-schema multi-tenancy (`tenant_id`)
@@ -133,25 +129,34 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 
 ## 12. Reusable Building Blocks
 Registry of shared code to consult **before writing anything new**.
-- **Added in Phase 1** (build/lint scaffolding, no runtime code): Maven Wrapper (`backend/mvnw`, `backend/mvnw.cmd`, `.mvn/wrapper/` — no system `mvn` required), `infra/.env.example`, root `README.md`.
+- **Added in Phase 1** (build/lint scaffolding): Maven Wrapper (`backend/mvnw`, `backend/mvnw.cmd`, `.mvn/wrapper/` — no system `mvn` required), `infra/.env.example`, root `README.md`.
+- **Added in Phase 2** (backend runtime — consult before duplicating): `ApiResponse<T>`/`PageMeta`/`PaginationMapper`/`PageParams` (envelopes, `common/api`), `ApiExceptionHandler` + `ApiException`/`ErrorCodes` (errors, `common/exception`), `TraceIdFilter`/`TraceIds` (traceId MDC, `common/logging`), `SecurityConfig` (deny-by-default HTTP rules), `JwtSecretValidator` (startup secret check), `package-info.java` in every TDD §5 module.
 
 | Name | Path | Purpose |
 |---|---|---|
-| Maven Wrapper + Spotless | `backend/mvnw*`, `backend/pom.xml` | `./mvnw spotless:check` / `spotless:apply` (google-java-format 1.22.0) |
+| Maven Wrapper + Spotless | `backend/mvnw*`, `backend/pom.xml` | `./mvnw spotless:check` / `spotless:apply` (google-java-format 1.22.0); `./mvnw test` runs the suite |
+| Response envelope + pagination | `backend/.../common/api/` | `ApiResponse.ok/fail`, `PageMeta`, `PageParams` (default 20, max 100) per API.md §3 |
+| Error handling | `backend/.../common/exception/` | `@RestControllerAdvice`, `ErrorCodes`, field-level 422 `fields[]` |
+| Trace + JSON logging | `backend/.../common/logging/`, `logback-spring.xml` | `X-Request-Id` → MDC → `traceId` in every log line (LogstashEncoder) |
+| Security baseline | `backend/.../config/SecurityConfig.java` | deny-by-default, public: `/actuator/health`, `/error`, swagger (dev) |
 | Frontend lint/format | `frontend/eslint.config.mjs`, `.prettierrc`, `tsconfig.json` | `npm run lint` / `format:check` / `typecheck` (strict) |
 | Compose stack | `infra/docker-compose.yml` | mysql/redis/minio/nginx; `--profile full` adds backend/frontend (CONF-2) |
 
 ## 13. Gotchas (read before running anything)
 1. **Shell is Windows PowerShell 5.1.** `&&` is not supported — use `cmd1; if ($?) { cmd2 }` or separate lines. UTF-8 glyphs (☐ ◐ — §) render as mojibake in the console; files are fine, verify with the Read tool, not `Get-Content`. Native stderr (e.g., `java -version`) shows up as a red `NativeCommandError` — not a failure.
-2. **What runs today (Phase 1 complete):** `docker compose up -d --wait` (4 healthy), `./mvnw spotless:check`, `npm run lint`. What does **NOT** yet exist: app code — `mvn spring-boot:run` (Phase 2), `npm run dev`/`build` (Phase 7), `--profile full` images (P2/P7). ROADMAP `Verify:` names for future tests are targets to create (A4).
-3. **Git:** repo pushed at `b883039` on `main`; Phase 1 committed on `phase/01-infra` (`f5625a8`…P1.8). Push/merge cadence is the user's call — never force-push or rewrite pushed history. Conventional commits from here on (ENGINEERING_RULES §10).
+2. **What runs today (Phase 2 complete):** `docker compose up -d --wait` (4 healthy), `./mvnw spotless:check`, `./mvnw test` (30 tests, 0 failures), `npm run lint`. What does **NOT** yet exist: DB layer — `mvn spring-boot:run` needs a real DB + Flyway (Phase 3; the app also fail-fast demands `hms.security.jwt-secret`, see 11), `npm run dev`/`build` (Phase 7), `--profile full` images (P2/P7).
+3. **Git:** Phase 1 merged `893dc26`; Phase 2 on `phase/02-backend` (`43dd558`→docs close). Push/merge cadence follows the standing phase-close instruction — never force-push or rewrite pushed history. Conventional commits (ENGINEERING_RULES §10).
 4. **Design-doc count is 13, not 14** — the 13 = Phase 0 deliverables. `docs/` also holds `progress.md` (session tracker, added 2026-10-01 → directory now has 14 `.md` files); root holds `README.md` (P1.7). Neither changes the 13 deliverables.
 5. **Docs live in `docs/`** (CONF-1); `infra/` exists (compose, nginx, `.env.example`); `backend/` and `frontend/` hold lint scaffolding only.
-6. **Phase 0 and Phase 1 are closed** (both approved/done 2026-09-30). Next phase starts only on instruction; never change a decided answer silently — raise it instead.
+6. **Phases 0, 1 and 2 are closed** (Phase 0/1 2026-09-30, Phase 2 2026-10-01). Next phase starts only on instruction; never change a decided answer silently — raise it instead.
 7. **14 docs claimed anywhere** → it's the same DOC-1 counting bug, not a second source of truth.
 8. **First `./mvnw` run downloads Maven 3.9.9** from Central (~1 min, network required); there is no system `mvn` on this machine. `.gitattributes` keeps `mvnw`/`*.sh` LF so Git Bash/CI work.
 9. **Host ports must be free:** 3306, 6379, 9000, 9001, 80 — the native Windows Redis service was stopped+disabled for :6379 (§9.14, reversible `sc.exe start Redis`).
 10. **`infra/.env` is gitignored and never in `git status`** — if it ever appears, stop and fix `.gitignore` before committing.
+11. **JWT secret:** surefire injects a test-only `hms.security.jwt-secret` so `@SpringBootTest` contexts pass `JwtSecretValidator`; running the app itself needs `--hms.security.jwt-secret=<48+ chars>` (or `HMS_JWT_SECRET`) — missing/placeholder/short secrets fail startup by design (P2.7). Never commit a real secret.
+12. **Spring CLI-style args in tests need the `--` prefix** (`runApp("--key=value")`) — without it Spring ignores the arg (P2.7 burned an hour on this).
+13. **Compiler needs `-parameters`** (set in `pom.xml`) or `@RequestParam` names are lost — if param-name errors appear, run `./mvnw clean` once; the flag only applies to recompiled classes.
+14. **Dependency names:** `spring-data-commons` (there is no `spring-boot-starter-data-commons`); logstash encoder 9.0 exposes `LogstashEncoder` (no `LoggingEventEncoder`).
 
 ## 14. Handoff Notes
 1. Read order: PROJECT_CONTEXT → PRD → TDD → ARCHITECTURE → ENGINEERING_RULES → ROADMAP → DESIGN_SYSTEM → (DATABASE, API, SECURITY, TESTING, DEPLOYMENT, AI_DEVELOPMENT_GUIDE).
