@@ -85,6 +85,20 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!--
+                          Test-only synthetic value so every @SpringBootTest passes P2.7
+                          startup secret validation. Never a real credential; production
+                          reads HMS_JWT_SECRET from the environment instead.
+                        -->
+                        <hms.security.jwt-secret>test-only-synthetic-secret-0123456789abcdef0123456789abcdef</hms.security.jwt-secret>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>${spotless.version}</version>
