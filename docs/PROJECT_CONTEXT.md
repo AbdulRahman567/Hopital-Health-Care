@@ -26,19 +26,20 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 ## 4. Current State
 | Item | Value |
 |---|---|
-| Current phase | Phase 2 — Backend Foundation (**Done ☑** 2026-10-01) |
-| Current task | P2.9 Phase close — `[x]` (2026-10-01). Next: **Phase 3 / P3.1** (Flyway integration) — starts only on user instruction |
-| Last completed task | P2.9 PROJECT_CONTEXT phase log + ROADMAP evidence + progress.md — `[x]` |
-| Last completed phase | **Phase 2** (2026-10-01); before it Phase 1 (2026-09-30) |
-| Repository state | `main` = `3c35b31` (Phase 2 merge hash recorded in the follow-up docs commit on `main`); tree clean; backend **30 tests green**; compose stack 4× healthy |
-| Branch | `main` (Phase 1 merged @ `893dc26`) · `phase/02-backend` (P2.1…P2.9: `43dd558` → `5cab819` + this docs commit) |
-| Last verified build | `backend`: `./mvnw test` → 30 tests, 0 failures · `./mvnw spotless:check` exit 0 · `frontend`: `npm run lint` / `typecheck` / `format:check` exit 0 |
+| Current phase | Phase 2 — Backend Foundation (**Done ☑** 2026-10-01; re-verified + merged 2026-10-02) |
+| Current task | P2.9 Phase close — `[x]` (2026-10-01), re-verified and merged 2026-10-02. Next: **Phase 3 / P3.1** (Flyway integration) — starts only on user instruction |
+| Last completed task | P2.9 PROJECT_CONTEXT phase log + ROADMAP evidence + progress.md — `[x]`; re-verification evidence added 2026-10-02 |
+| Last completed phase | **Phase 2** (2026-10-01, merged 2026-10-02); before it Phase 1 (2026-09-30) |
+| Repository state | `main` = `a982918` (Phase 2 `--no-ff` merge) + this docs commit; tree clean; backend **30 tests green** (re-run 2026-10-02) |
+| Branch | `main` (Phase 2 merged @ `a982918`) · `phase/02-backend` (P2.1…P2.9: `43dd558` → `5cab819` + `620e161` + `a1d51ff`) |
+| Last verified build | `backend` (2026-10-02): `./mvnw -q clean` / `-q compile` / `-q spotless:check` → 0 · `./mvnw test` → 30 tests, 0 failures · boot smoke: `/actuator/health` 200, dev swagger 200, `/actuator/env` + `/api/v1/patients` 401, missing `HMS_JWT_SECRET` aborts startup · `frontend`: `npm run lint` / `typecheck` / `format:check` exit 0 |
 
 ## 5. Next action
-**Phase 2 is complete (2026-10-01).** Next phase: **Phase 3 — Database Foundation**, starting at **P3.1** — Flyway integration with `ddl-auto=validate` in all profiles; Verify: `./mvnw test -Dtest=FlywayStartupTest` (context starts, schema validated). Do **not** start it automatically (ENGINEERING_RULES §2.1) — wait for the user's instruction; then use the Phase Prompt (AI_DEVELOPMENT_GUIDE §6).
+**Phase 2 is complete and merged (`a982918`, 2026-10-02; every `Verify:` re-run that day).** Next phase: **Phase 3 — Database Foundation**, starting at **P3.1** — Flyway integration with `ddl-auto=validate` in all profiles; Verify: `./mvnw test -Dtest=FlywayStartupTest` (context starts, schema validated). Do **not** start it automatically (ENGINEERING_RULES §2.1) — wait for the user's instruction; then use the Phase Prompt (AI_DEVELOPMENT_GUIDE §6).
 
-## 6. Working tree state (2026-10-01, phase 2 close)
-- **Git:** Phase 2 on **`phase/02-backend`**, one conventional commit per task: `43dd558` (P2.1 skeleton) · `85596ae` (P2.2 envelope) · `557a8df` (P2.3 exception handler) · `d7ae274` (P2.4 logging) · `08b838f` (P2.5 security) · `b8f66fe` (P2.6 OpenAPI) · `5cab819` (P2.7 secret validation) + this docs commit (P2.9; P2.8 ran green — no file changes, evidence in ROADMAP). Merge `--no-ff` into `main` follows; merge hash recorded by a follow-up docs commit on `main` (same pattern as Phase 1: `893dc26` → `0bf724b`).
+## 6. Working tree state (2026-10-02, phase 2 merge)
+- **Git:** Phase 2 on **`phase/02-backend`**, one conventional commit per task: `43dd558` (P2.1 skeleton) · `85596ae` (P2.2 envelope) · `557a8df` (P2.3 exception handler) · `d7ae274` (P2.4 logging) · `08b838f` (P2.5 security) · `b8f66fe` (P2.6 OpenAPI) · `5cab819` (P2.7 secret validation) · `620e161` (P2.9 docs close) · `a1d51ff` (P2.9 features.md group C + re-verification evidence). Merged `--no-ff` into `main` as **`a982918`**; this docs commit records the hash (same pattern as Phase 1: `893dc26` → `0bf724b`).
+- **Re-verification 2026-10-02 (plan §3.4 option A — verify & reuse, stale `target/` cleaned first):** `./mvnw -q clean`/`-q compile`/`-q spotless:check` → 0 · each named verify re-run individually → PASS · `./mvnw test` → **30 tests, 0 failures** · boot smoke (health 200, dev swagger 200, `/actuator/env` 401, arbitrary route 401) · missing `HMS_JWT_SECRET` → startup abort · `git grep` secret scan clean (`infra/.env` ignored).
 - **Build / checks right now (all green):** `./mvnw test` → **30 tests, 0 failures** (8+10+2+4+2+4; surefire reports `target/surefire-reports/`) · `./mvnw spotless:check` → 0 · `npm run lint` / `typecheck` / `format:check` → 0 · `docker compose ps` → 4/4 healthy.
 - **Backend now exists:** `com.healthcare.hms` root package with TDD §5 modules seeded (`package-info.java` × 20), `HealthcareHmsApplication`, profile configs (`application{,-dev,-prod}.yml`), `logback-spring.xml`.
 - **Conclusion:** Phase 2 DoD met — Exit criteria ("App boots; error and envelope tests pass; actuator restricted") all satisfied by P2.5–P2.8 evidence; merge/push cadence follows the user's standing phase-close instruction.
@@ -48,7 +49,7 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 |---|---|---|---|
 | 0 | **Done ☑** | `b883039` (all Phase 0 docs committed by the user's initial commit) | P0.1–P0.8 all `[x]`; **approved by user 2026-09-30** — OQ-1…6 / TQ-1…7 accepted at defaults, CONF-1…6 + GAP-1 decided (§10); 13 docs moved from repo root into `docs/` |
 | 1 | **Done ☑** | `b883039` base; `f5625a8` → `af1c339` on `phase/01-infra`; merged to `main` as `893dc26` (pushed) | P1.1–P1.8 all `[x]` (2026-09-30). Compose 4× healthy, loopback-only; MinIO via openvidu mirror (§9.13); native Redis service stopped+disabled (§9.14); Spotless + ESLint/Prettier/tsc green; README commands verified runnable; no secrets committed |
-| 2 | **Done ☑** | `phase/02-backend`: `43dd558` → `5cab819` + P2.9 docs commit; merged `--no-ff` to `main` (hash in the follow-up docs commit) | P2.1–P2.9 all `[x]` (2026-10-01). 30 tests green; deny-by-default `SecurityConfig`; swagger dev-only (404 in prod); fail-fast `JwtSecretValidator`; surefire injects test-only JWT secret (§13); evidence in ROADMAP Phase 2 block |
+| 2 | **Done ☑** | `phase/02-backend`: `43dd558` → `a1d51ff`; merged `--no-ff` to `main` as **`a982918`** (2026-10-02) | P2.1–P2.9 all `[x]` (2026-10-01; re-verified 2026-10-02). 30 tests green; deny-by-default `SecurityConfig`; swagger dev-only (404 in prod); fail-fast `JwtSecretValidator`; surefire injects test-only JWT secret (§13); evidence in ROADMAP Phase 2 block; base entities deferred to Phase 3 with the first migration (plan §10.2) |
 | 3–30 | Not started ☐ | – | Checklists live in ROADMAP.md; a phase starts only when the previous one meets its DoD |
 
 ## 8. Decisions Locked

@@ -129,6 +129,7 @@ Each phase is small, verifiable and ends with the Definition of Done. **Only the
 - Fail-fast re-checked live: `spring-boot:run` with no `HMS_JWT_SECRET` → startup aborts ("refuses to start without it")
 - Secret scan: `git grep` → only the deliberately labelled surefire **test-only-synthetic** value + docs; `infra/.env` ignored (`!! infra/.env`); no real credential committed
 - **Base entities (plan §10.2):** deferred to Phase 3 with the first migration (`BaseEntity`/`TenantOwnedEntity`) — no schema exists yet, so no entities were invented in Phase 2
+- Phase closed: merged `--no-ff` into `main` as **`a982918`** (2026-10-02); `docs/features.md` group C ticked in `a1d51ff`
 
 ### Phase 3 — Database Foundation
 - **Scope:** Flyway setup, baseline migrations (tenants, users, roles, permissions, audit base), naming/index conventions.

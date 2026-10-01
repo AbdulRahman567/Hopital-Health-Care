@@ -3,7 +3,7 @@
 > Session-crossing dashboard. **Update this file at every phase close (and after any significant fix).**
 > Detail lives elsewhere: status truth = `ROADMAP.md` checkboxes · memory = `PROJECT_CONTEXT.md` · rules = `ENGINEERING_RULES.md` · prompts = `AI_DEVELOPMENT_GUIDE.md`.
 
-**Last updated:** 2026-10-01 — session end (Phase 1 complete + deep verification)
+**Last updated:** 2026-10-02 — Phase 2 re-verified (plan §3.4 option A) and merged to `main`
 
 ---
 
@@ -13,11 +13,11 @@
 |---|---|---|
 | 0 — Documentation & Architecture | ☑ **Done** | Approved 2026-09-30; 13 design docs in `docs/`; `b883039` |
 | 1 — Repository & Infrastructure | ☑ **Done** | 8/8 tasks; merged `893dc26` → `ff90709`; pushed; deep tests green |
-| 2 — Backend Foundation | ☑ **Done** | 9/9 tasks (2026-10-01); 30 tests green; merged `--no-ff` → `main` (hash in follow-up docs commit) |
+| 2 — Backend Foundation | ☑ **Done** | 9/9 tasks (2026-10-01); re-verified 2026-10-02; 30 tests green; merged `--no-ff` → `main` as `a982918` |
 | 3 — Database Foundation | ☐ **Next** | Starts at **P3.1** (Flyway, `ddl-auto=validate`) on user instruction only |
 | 4–30 | ☐ Not started | Checklists in `ROADMAP.md`; one phase at a time |
 
-**Verified snapshot (last run 2026-10-01):** `./mvnw test` **30 tests, 0 failures** · `./mvnw spotless:check` 0 · `npm run lint`/`typecheck`/`format:check` 0 · compose **4/4 healthy** (loopback-only ports) · tree clean · no secrets tracked (surefire uses a test-only JWT secret).
+**Verified snapshot (last run 2026-10-02):** `./mvnw -q clean` / `-q compile` / `-q spotless:check` **0** · `./mvnw test` **30 tests, 0 failures** · each named verify re-run individually → PASS · boot smoke: health 200, dev swagger 200, `/actuator/env` 401, missing `HMS_JWT_SECRET` aborts startup · `npm run lint`/`typecheck`/`format:check` 0 · tree clean · no secrets tracked (surefire uses a test-only JWT secret).
 
 ## 2. What Phase 2 delivered (2026-10-01)
 
@@ -58,8 +58,10 @@
 | `08b838f` | P2.5 deny-by-default security, health public |
 | `b8f66fe` | P2.6 OpenAPI dev-only (404 in prod) |
 | `5cab819` | P2.7 fail-fast JWT secret validation |
-| (this commit) | P2.9 docs: ROADMAP ☑ + PROJECT_CONTEXT + progress.md (P2.8 suite green: 30 tests) |
-| (follow-up on `main`) | merge `--no-ff` → `main` + record merge hash |
+| `620e161` | P2.9 docs: ROADMAP ☑ + PROJECT_CONTEXT + progress.md (P2.8 suite green: 30 tests) |
+| `a1d51ff` | P2.9 docs: `features.md` group C ticked + 2026-10-02 re-verification evidence |
+| `a982918` | merge `--no-ff` phase/02-backend → main (2026-10-02) |
+| (this commit) | docs: record Phase 2 merge hash + re-verification in PROJECT_CONTEXT/progress |
 
 ## 4. Next session — how to resume
 
@@ -84,4 +86,5 @@
 | ≤2026-09-30 | Phase 0 authored, cross-reviewed, approved (OQ/TQ defaults, CONF-1…6 + GAP-1 decided) |
 | 2026-09-30 | Phase 1 started: layout, git init/push, compose stack (MinIO source + Redis port blockers resolved with user approval) |
 | 2026-10-01 | Phase 1 P1.4–P1.8 complete → merged & pushed; 3 deep tests pass; CRLF fix `ff90709` — **phase closed** |
-| 2026-10-01 | Phase 2 P2.1–P2.9 complete on `phase/02-backend`; 30 tests green; docs closed — **phase closing (merge + push)** |
+| 2026-10-01 | Phase 2 P2.1–P2.9 complete on `phase/02-backend`; 30 tests green; docs closed |
+| 2026-10-02 | Phase 2 plan executed (option A verify & reuse): all `Verify:` commands re-run green, boot smoke + fail-fast checked, `features.md` group C committed, merged `a982918` → **phase closed** |
