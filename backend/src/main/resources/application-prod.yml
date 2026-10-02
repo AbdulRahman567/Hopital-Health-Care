@@ -1,4 +1,10 @@
 # Production profile. Swagger/OpenAPI is disabled (P2.6) and returns 404.
+spring:
+  jpa:
+    hibernate:
+      # P3.1 — ROADMAP requires ddl-auto=validate in every profile, not just the base file.
+      ddl-auto: validate
+
 springdoc:
   api-docs:
     enabled: false

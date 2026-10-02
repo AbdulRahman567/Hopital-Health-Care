@@ -1,4 +1,10 @@
 # Development profile (default). Secrets still come from the environment.
+spring:
+  jpa:
+    hibernate:
+      # P3.1 — ROADMAP requires ddl-auto=validate in every profile, not just the base file.
+      ddl-auto: validate
+
 logging:
   level:
     com.healthcare.hms: DEBUG
