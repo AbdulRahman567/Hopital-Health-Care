@@ -1,9 +1,13 @@
 package com.healthcare.hms.db;
 
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
@@ -127,6 +131,13 @@ public final class MigrationTestSupport implements AutoCloseable {
     return flyway;
   }
 
+  /** {@code true} when the given migration version was applied successfully on this schema. */
+  public boolean migrationSucceeded(String version) {
+    return count(
+            "SELECT COUNT(*) FROM flyway_schema_history WHERE version = ? AND success = 1", version)
+        > 0;
+  }
+
   public JdbcTemplate jdbc() {
     return jdbc;
   }
@@ -137,6 +148,101 @@ public final class MigrationTestSupport implements AutoCloseable {
 
   public String schema() {
     return schema;
+  }
+
+  // -------------------------------------------------------------------------
+  // Fixture helpers shared by the migration suites
+  // -------------------------------------------------------------------------
+
+  /** {@code SELECT COUNT(*)} shortcut used by most assertions. */
+  public int count(String sql, Object... args) {
+    Integer result = jdbc.queryForObject(sql, Integer.class, args);
+    return result == null ? 0 : result;
+  }
+
+  public boolean tableExists(String table) {
+    return count(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?",
+            schema,
+            table)
+        > 0;
+  }
+
+  /** {@code true} when the column is nullable. */
+  public boolean columnIsNullable(String table, String column) {
+    String nullable =
+        jdbc.queryForObject(
+            "SELECT is_nullable FROM information_schema.columns"
+                + " WHERE table_schema = ? AND table_name = ? AND column_name = ?",
+            String.class,
+            schema,
+            table,
+            column);
+    return "YES".equalsIgnoreCase(nullable);
+  }
+
+  public UUID insertTenant(String slug) {
+    return insertTenant(slug, "ACTIVE");
+  }
+
+  public UUID insertTenant(String slug, String status) {
+    UUID id = UUID.randomUUID();
+    jdbc.update(
+        "INSERT INTO tenants (id, name, slug, status, timezone, verified_at, created_at,"
+            + " created_by, updated_at, updated_by, version)"
+            + " VALUES (?, ?, ?, ?, 'UTC', NULL, ?, NULL, ?, NULL, 0)",
+        uuidBytes(id),
+        slug.replace('-', ' '),
+        slug,
+        status,
+        now(),
+        now());
+    return id;
+  }
+
+  public UUID insertUser(UUID tenantId, String email) {
+    return insertUser(tenantId, email, "ACTIVE");
+  }
+
+  public UUID insertUser(UUID tenantId, String email, String status) {
+    UUID id = UUID.randomUUID();
+    jdbc.update(
+        "INSERT INTO users (id, tenant_id, email, password_hash, first_name, last_name, status,"
+            + " failed_attempts, locked_until, mfa_enabled, mfa_secret, created_at, created_by,"
+            + " updated_at, updated_by, version)"
+            + " VALUES (?, ?, ?, 'test-password-hash-not-a-secret', 'Test', 'User', ?, 0, NULL, 0,"
+            + " NULL, ?, NULL, ?, NULL, 0)",
+        uuidBytes(id),
+        uuidBytes(tenantId),
+        email,
+        status,
+        now(),
+        now());
+    return id;
+  }
+
+  public UUID insertRole(UUID tenantId, String name) {
+    UUID id = UUID.randomUUID();
+    jdbc.update(
+        "INSERT INTO roles (id, tenant_id, name, system_flag, created_at, created_by, updated_at,"
+            + " updated_by, version) VALUES (?, ?, ?, 0, ?, NULL, ?, NULL, 0)",
+        uuidBytes(id),
+        uuidBytes(tenantId),
+        name,
+        now(),
+        now());
+    return id;
+  }
+
+  public static byte[] uuidBytes(UUID uuid) {
+    return ByteBuffer.allocate(16)
+        .putLong(uuid.getMostSignificantBits())
+        .putLong(uuid.getLeastSignificantBits())
+        .array();
+  }
+
+  public static Timestamp now() {
+    return Timestamp.from(Instant.now());
   }
 
   @Override
