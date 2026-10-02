@@ -1,5 +1,6 @@
 package com.healthcare.hms.tenant;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +57,35 @@ public final class TenantContext {
               + " TenantContext.set(...) or TenantContext.run(...).");
     }
     return tenantId;
+  }
+
+  /**
+   * Captures the bound tenant as a job payload (P4.7), so an asynchronous worker can re-establish
+   * the same scope with {@link #runWith(TenantJobPayload, Runnable)}.
+   *
+   * <p>The actor is left {@code null} on purpose: this holder stores the tenant only, and the audit
+   * layer (Phase 19) is what knows the user behind the request.
+   *
+   * @return a payload carrying the current tenant and the capture time
+   * @throws IllegalStateException when no tenant is bound (fail closed — a job without a tenant
+   *     could not be filtered)
+   */
+  public static TenantJobPayload toJobPayload() {
+    return new TenantJobPayload(require(), null, Instant.now());
+  }
+
+  /**
+   * Runs {@code work} as {@code payload}'s tenant, then restores whatever was bound before —
+   * nothing, i.e. a cleared context, when the worker had no scope of its own. The previous value is
+   * restored in {@code finally}, so a throwing job cannot leave this thread bound to the wrong
+   * tenant (the same discipline as the tenant resolution filter).
+   *
+   * @param payload tenant to bind for the duration of {@code work}
+   * @param work body to execute
+   */
+  public static void runWith(TenantJobPayload payload, Runnable work) {
+    Objects.requireNonNull(payload, "payload must not be null");
+    run(payload.tenantId(), work);
   }
 
   /**
