@@ -34,12 +34,16 @@ public final class MigrationTestSupport implements AutoCloseable {
 
   private final String schema;
   private final String jdbcUrl;
+  private final String username;
+  private final String password;
   private final JdbcTemplate jdbc;
   private final Flyway flyway;
 
   private MigrationTestSupport(String schema) {
     MySQLContainer<?> running = startServer();
     this.schema = schema;
+    this.username = running.getUsername();
+    this.password = running.getPassword();
     this.jdbcUrl =
         "jdbc:mysql://"
             + running.getHost()
@@ -144,6 +148,15 @@ public final class MigrationTestSupport implements AutoCloseable {
 
   public String jdbcUrl() {
     return jdbcUrl;
+  }
+
+  /** Application user granted on this suite's schema (root owns the container itself). */
+  public String username() {
+    return username;
+  }
+
+  public String password() {
+    return password;
   }
 
   public String schema() {
