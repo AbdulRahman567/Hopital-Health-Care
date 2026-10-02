@@ -44,6 +44,9 @@ public class TenantContextFilter extends OncePerRequestFilter {
   /** Claim name fixed by TDD section 7; Phase 5 issues it at login. */
   public static final String TENANT_CLAIM = "tenantId";
 
+  /** Client tenant hint (TDD section 6.2.3). Never honored — it can only trigger a rejection. */
+  public static final String TENANT_HINT_HEADER = "X-Tenant-ID";
+
   private static final Logger logger = LoggerFactory.getLogger(TenantContextFilter.class);
 
   private final ObjectMapper objectMapper;
@@ -70,10 +73,43 @@ public class TenantContextFilter extends OncePerRequestFilter {
           return;
         }
         TenantContext.set(tenantId);
+        if (!tenantHintAccepted(request, tenantId)) {
+          ApiErrorWriter.write(
+              response, objectMapper, 404, ErrorCodes.NOT_FOUND, "Resource not found.");
+          return;
+        }
       }
       filterChain.doFilter(request, response);
     } finally {
       TenantContext.clear();
+    }
+  }
+
+  /**
+   * P4.3 — client tenant hints are never honored (TDD section 6.2.3, ENGINEERING_RULES section
+   * 1.2). The header may be absent, may repeat the authenticated tenant (harmless) or may claim
+   * another tenant — only the first two are allowed through, and the third answers 404 so the
+   * caller cannot tell whether the other tenant exists (ADR-006). The header therefore has exactly
+   * one possible effect on the outcome: rejection.
+   *
+   * <p>Evaluated only when a tenant was actually resolved, so a stray header on a public route
+   * stays harmless. The path and body legs cannot be exercised yet: no endpoint accepts a tenant id
+   * (API.md section 5) and P2.3 already rejects an unknown {@code tenantId} body property with 422,
+   * so both vectors are structurally closed until controllers exist.
+   *
+   * @param request current request
+   * @param tenantId tenant resolved from the verified token
+   * @return {@code true} when the request may continue
+   */
+  private boolean tenantHintAccepted(HttpServletRequest request, UUID tenantId) {
+    String hint = request.getHeader(TENANT_HINT_HEADER);
+    if (hint == null || hint.isBlank()) {
+      return true;
+    }
+    try {
+      return tenantId.equals(UUID.fromString(hint.trim()));
+    } catch (IllegalArgumentException ex) {
+      return false;
     }
   }
 
