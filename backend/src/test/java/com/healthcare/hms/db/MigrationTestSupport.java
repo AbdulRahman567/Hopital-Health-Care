@@ -168,6 +168,28 @@ public final class MigrationTestSupport implements AutoCloseable {
         > 0;
   }
 
+  public boolean columnExists(String table, String column) {
+    return count(
+            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = ?"
+                + " AND table_name = ? AND column_name = ?",
+            schema,
+            table,
+            column)
+        > 0;
+  }
+
+  /** Ordered column names of {@code indexName}, empty when the index does not exist. */
+  public java.util.List<String> indexColumns(String table, String indexName) {
+    return jdbc.queryForList(
+        "SELECT column_name FROM information_schema.statistics"
+            + " WHERE table_schema = ? AND table_name = ? AND index_name = ?"
+            + " ORDER BY seq_in_index",
+        String.class,
+        schema,
+        table,
+        indexName);
+  }
+
   /** {@code true} when the column is nullable. */
   public boolean columnIsNullable(String table, String column) {
     String nullable =

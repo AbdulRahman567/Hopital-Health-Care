@@ -40,8 +40,10 @@ class MigrationV2IT {
   }
 
   @Test
-  void flywayIsAtV2() {
-    assertThat(db.currentVersion()).isEqualTo("2");
+  void v2WasAppliedSuccessfullyOnAnEmptyDatabase() {
+    assertThat(db.migrationSucceeded("2"))
+        .as("V2 must apply cleanly when Flyway starts from an empty schema")
+        .isTrue();
   }
 
   @Test
