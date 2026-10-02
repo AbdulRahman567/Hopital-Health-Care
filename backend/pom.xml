@@ -44,6 +44,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!--
+          P4.2 (decision D1-A): resource-server HS256 JwtDecoder so TenantContextFilter can read the
+          tenantId claim of a verified bearer token. Version comes from the Boot 3.5.16 BOM; Phase 5
+          only adds login/refresh on top of it, it replaces nothing.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
