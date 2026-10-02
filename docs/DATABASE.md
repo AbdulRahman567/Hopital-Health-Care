@@ -17,10 +17,10 @@ Engine: **MySQL 8** (InnoDB, `utf8mb4`). Migrations: **Flyway**. Access: Spring 
 | Audit columns | `created_at`, `created_by`, `updated_at`, `updated_by`, `version` |
 | Time | `DATETIME(6)` in UTC |
 | Enums | `VARCHAR` + `CHECK` constraint, mapped as `EnumType.STRING` |
-| Booleans | `TINYINT(1)` with defaults |
+| Booleans | `TINYINT(1)` with defaults — MySQL 8.4 logs warning 1681 (deprecated display width) on every migration; cosmetic, keep `TINYINT(1)` |
 | Money | `DECIMAL(19,4)` + currency code |
 | Text | Explicit lengths; `TEXT` only for narrative fields |
-| Naming | `pk_`, `fk_<table>_<ref>`, `uq_<table>_<cols>`, `idx_<table>_<cols>` |
+| Naming | `pk_`, `fk_<table>_<ref>`, `uq_<table>_<cols>`, `idx_<table>_<cols>` — written into the DDL. **MySQL caveat (recorded at P3.8):** it always stores a primary key's index/constraint name as `PRIMARY`, whatever the DDL calls it, so `pk_` is documentation only and checks accept `PRIMARY` for primary keys. MySQL also auto-creates an `fk_<table>_<ref>` index for any FK no existing index can serve. |
 
 ## 3. Migration Rules
 1. File names `V{n}__{description}.sql`; strictly sequential; never edit an applied migration.
@@ -55,6 +55,7 @@ Engine: **MySQL 8** (InnoDB, `utf8mb4`). Migrations: **Flyway**. Access: Spring 
 
 ## 8. Audit & Immutability
 - `audit_logs` is append-only: the application DB user is granted `INSERT`/`SELECT` only.
+- `audit_logs` carries only `created_at` (plus `actor_id`, the `created_by` equivalent) — the §2 audit column set `updated_at`/`updated_by`/`version` does **not** apply, because an append-only row is never updated. Recorded at P3.8.
 - Partition or archive audit tables by time as they grow.
 
 ## 9. Performance Practices

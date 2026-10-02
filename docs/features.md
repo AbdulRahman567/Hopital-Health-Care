@@ -85,15 +85,15 @@
 - [x] Fail-fast startup validation: missing/placeholder JWT secret aborts boot
 - [x] Unit tests: envelope, errors, pagination helpers
 
-### D. Database Foundation — Phase 3 ☐
+### D. Database Foundation — Phase 3 ☑
 
-- [ ] Flyway integration; `ddl-auto=validate` in all profiles
-- [ ] Migration V1: `tenants`, `users` with audit columns + `tenant_id` rules (CONF-5)
-- [ ] Migration V2: `roles`, `permissions`, `role_permissions`, `user_roles` + permission seed
-- [ ] Migration V3: `audit_logs` append-only base table
-- [ ] Index rules enforced: every FK indexed, composite indexes lead with `tenant_id`
-- [ ] DB-level tenancy: `tenant_id NOT NULL` rejects NULL
-- [ ] Migration test from a clean database in one command (Testcontainers)
+- [x] Flyway integration; `ddl-auto=validate` in all profiles
+- [x] Migration V1: `tenants`, `users` with audit columns + `tenant_id` rules (CONF-5)
+- [x] Migration V2: `roles`, `permissions`, `role_permissions`, `user_roles` + permission seed
+- [x] Migration V3: `audit_logs` append-only base table
+- [x] Index rules enforced: every FK indexed, composite indexes lead with `tenant_id`
+- [x] DB-level tenancy: `tenant_id NOT NULL` rejects NULL
+- [x] Migration test from a clean database in one command (Testcontainers)
 
 ### E. Multi-Tenancy Isolation — Phase 4 ☐
 

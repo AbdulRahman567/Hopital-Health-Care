@@ -26,23 +26,22 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 ## 4. Current State
 | Item | Value |
 |---|---|
-| Current phase | Phase 2 — Backend Foundation (**Done ☑** 2026-10-01; re-verified + merged 2026-10-02) |
-| Current task | P2.9 Phase close — `[x]` (2026-10-01), re-verified and merged 2026-10-02. Next: **Phase 3 / P3.1** (Flyway integration) — starts only on user instruction |
-| Last completed task | P2.9 PROJECT_CONTEXT phase log + ROADMAP evidence + progress.md — `[x]`; re-verification evidence added 2026-10-02 |
-| Last completed phase | **Phase 2** (2026-10-01, merged 2026-10-02); before it Phase 1 (2026-09-30) |
-| Repository state | `main` = `a982918` (Phase 2 `--no-ff` merge) + this docs commit; tree clean; backend **30 tests green** (re-run 2026-10-02) |
-| Branch | `main` (Phase 2 merged @ `a982918`) · `phase/02-backend` (P2.1…P2.9: `43dd558` → `5cab819` + `620e161` + `a1d51ff`) |
-| Last verified build | `backend` (2026-10-02): `./mvnw -q clean` / `-q compile` / `-q spotless:check` → 0 · `./mvnw test` → 30 tests, 0 failures · boot smoke: `/actuator/health` 200, dev swagger 200, `/actuator/env` + `/api/v1/patients` 401, missing `HMS_JWT_SECRET` aborts startup · `frontend`: `npm run lint` / `typecheck` / `format:check` exit 0 |
+| Current phase | Phase 3 — Database Foundation (**Done ☑** 2026-10-02 on `phase/03-database`; merge/push pending instruction) |
+| Current task | P3.8 Docs close — `[x]` (2026-10-02). Next: **Phase 4 / P4.1** (`TenantContext`) — starts only on user instruction |
+| Last completed task | P3.8 ROADMAP evidence + `DATABASE.md` deviations + PROJECT_CONTEXT + `progress.md` + `features.md` group D — `[x]` |
+| Last completed phase | **Phase 3** (2026-10-02, branch complete, not merged); before it Phase 2 (2026-10-01, merged 2026-10-02), Phase 1 (2026-09-30) |
+| Repository state | `main` = `aec06f8` (Phase 2 merge `a982918` + docs record); `phase/03-database` = `c92b851` → … → this docs commit; tree clean after commit; backend **76 tests green** (2026-10-02) |
+| Branch | `main` (unchanged) · `phase/03-database` (P3.1…P3.8: `c92b851` `1048264` `cfb9b05` `06e757e` `06ec4f9` `0159597` `6f98beb` + this docs commit) |
+| Last verified build | `backend` (2026-10-02): `./mvnw -q spotless:check` → 0 · `./mvnw test` → **76 tests, 0 failures, 0 skipped** · `./mvnw verify -Dtest=MigrationIT` → BUILD SUCCESS · `docker compose ps` 4/4 healthy · `frontend`: `npm run lint` / `typecheck` / `format:check` exit 0 |
 
 ## 5. Next action
-**Phase 2 is complete and merged (`a982918`, 2026-10-02; every `Verify:` re-run that day).** Next phase: **Phase 3 — Database Foundation**, starting at **P3.1** — Flyway integration with `ddl-auto=validate` in all profiles; Verify: `./mvnw test -Dtest=FlywayStartupTest` (context starts, schema validated). Do **not** start it automatically (ENGINEERING_RULES §2.1) — wait for the user's instruction; then use the Phase Prompt (AI_DEVELOPMENT_GUIDE §6).
+**Phase 3 is complete on `phase/03-database` (2026-10-02, every `Verify:` run that day; 76 tests green) but not merged or pushed — the standing phase-close instruction applies.** Next phase: **Phase 4 — Multi-Tenancy**, starting at **P4.1** — `TenantContext` request-scoped holder cleared in `finally`; Verify: `./mvnw test -Dtest=TenantContextTest`. Do **not** start it automatically (ENGINEERING_RULES §2.1) — wait for the user's instruction; then use the Phase Prompt (AI_DEVELOPMENT_GUIDE §6).
 
-## 6. Working tree state (2026-10-02, phase 2 merge)
-- **Git:** Phase 2 on **`phase/02-backend`**, one conventional commit per task: `43dd558` (P2.1 skeleton) · `85596ae` (P2.2 envelope) · `557a8df` (P2.3 exception handler) · `d7ae274` (P2.4 logging) · `08b838f` (P2.5 security) · `b8f66fe` (P2.6 OpenAPI) · `5cab819` (P2.7 secret validation) · `620e161` (P2.9 docs close) · `a1d51ff` (P2.9 features.md group C + re-verification evidence). Merged `--no-ff` into `main` as **`a982918`**; this docs commit records the hash (same pattern as Phase 1: `893dc26` → `0bf724b`).
-- **Re-verification 2026-10-02 (plan §3.4 option A — verify & reuse, stale `target/` cleaned first):** `./mvnw -q clean`/`-q compile`/`-q spotless:check` → 0 · each named verify re-run individually → PASS · `./mvnw test` → **30 tests, 0 failures** · boot smoke (health 200, dev swagger 200, `/actuator/env` 401, arbitrary route 401) · missing `HMS_JWT_SECRET` → startup abort · `git grep` secret scan clean (`infra/.env` ignored).
-- **Build / checks right now (all green):** `./mvnw test` → **30 tests, 0 failures** (8+10+2+4+2+4; surefire reports `target/surefire-reports/`) · `./mvnw spotless:check` → 0 · `npm run lint` / `typecheck` / `format:check` → 0 · `docker compose ps` → 4/4 healthy.
-- **Backend now exists:** `com.healthcare.hms` root package with TDD §5 modules seeded (`package-info.java` × 20), `HealthcareHmsApplication`, profile configs (`application{,-dev,-prod}.yml`), `logback-spring.xml`.
-- **Conclusion:** Phase 2 DoD met — Exit criteria ("App boots; error and envelope tests pass; actuator restricted") all satisfied by P2.5–P2.8 evidence; merge/push cadence follows the user's standing phase-close instruction.
+## 6. Working tree state (2026-10-02, phase 3 close)
+- **Git:** Phase 3 on **`phase/03-database`** (branched from `main` @ `aec06f8`), one conventional commit per task: `c92b851` (P3.1 Flyway + `ddl-auto=validate`) · `1048264` (P3.2 V1 `tenants`/`users` + `BaseEntity`/`TenantOwnedEntity`) · `cfb9b05` (P3.3 V2 roles/permissions + 53-row seed) · `06e757e` (P3.4 V3 `audit_logs`) · `06ec4f9` (P3.5 `IndexConventionIT`) · `0159597` (P3.6 `TenantIdNotNullIT`) · `6f98beb` (P3.7 `MigrationIT`) + this docs commit (P3.8). **Not merged, not pushed** — the standing phase-close instruction is outstanding.
+- **Build / checks right now (all green, 2026-10-02):** `./mvnw test` → **76 tests, 0 failures, 0 skipped** (30 Phase 2 unchanged + 46 Phase 3) · `./mvnw spotless:check` → 0 · `./mvnw verify -Dtest=MigrationIT` → BUILD SUCCESS · `npm run lint` / `typecheck` / `format:check` → 0 · `docker compose ps` → 4/4 healthy · `docker ps -a` shows **no** leftover Testcontainers containers (every suite is ephemeral).
+- **Backend now has a real schema:** `V1__tenants_and_users.sql`, `V2__roles_permissions_and_seed.sql`, `V3__audit_logs.sql` (Flyway, `ddl-auto: validate`), 7 schema-guard test classes (46 tests: `FlywayStartupTest`, `MigrationV1/2/3IT`, `IndexConventionIT`, `TenantIdNotNullIT`, `MigrationIT`), `hms.test.datasource.override` escape hatch for the D1 initializer.
+- **Conclusion:** Phase 3 DoD met — all 8 tasks `[x]`, every `Verify:` re-run, 7 deviations recorded in ROADMAP + `DATABASE.md` §2/§8. Merge/push cadence follows the user's standing phase-close instruction.
 
 ## 7. Phase log
 | Phase | Status | Commit | Notes / known issues |
@@ -50,7 +49,8 @@ A **multi-tenant Healthcare Management SaaS platform**. Each hospital is a tenan
 | 0 | **Done ☑** | `b883039` (all Phase 0 docs committed by the user's initial commit) | P0.1–P0.8 all `[x]`; **approved by user 2026-09-30** — OQ-1…6 / TQ-1…7 accepted at defaults, CONF-1…6 + GAP-1 decided (§10); 13 docs moved from repo root into `docs/` |
 | 1 | **Done ☑** | `b883039` base; `f5625a8` → `af1c339` on `phase/01-infra`; merged to `main` as `893dc26` (pushed) | P1.1–P1.8 all `[x]` (2026-09-30). Compose 4× healthy, loopback-only; MinIO via openvidu mirror (§9.13); native Redis service stopped+disabled (§9.14); Spotless + ESLint/Prettier/tsc green; README commands verified runnable; no secrets committed |
 | 2 | **Done ☑** | `phase/02-backend`: `43dd558` → `a1d51ff`; merged `--no-ff` to `main` as **`a982918`** (2026-10-02) | P2.1–P2.9 all `[x]` (2026-10-01; re-verified 2026-10-02). 30 tests green; deny-by-default `SecurityConfig`; swagger dev-only (404 in prod); fail-fast `JwtSecretValidator`; surefire injects test-only JWT secret (§13); evidence in ROADMAP Phase 2 block; base entities deferred to Phase 3 with the first migration (plan §10.2) |
-| 3–30 | Not started ☐ | – | Checklists live in ROADMAP.md; a phase starts only when the previous one meets its DoD |
+| 3 | **Done ☑** | `phase/03-database`: `c92b851` → this docs commit; **not yet merged** | P3.1–P3.8 all `[x]` (2026-10-02). 76 tests green (30 + 46); Flyway `V1`–`V3` + `ddl-auto: validate` in all profiles; 53-row permission seed; `tenant_id NOT NULL` on all 5 tenant tables; index/naming guard reads `information_schema` for every table; D1 test wiring + `hms.test.datasource.override`; 7 deviations recorded (ROADMAP evidence + `DATABASE.md` §2/§8). Merge/push pending user instruction |
+| 4–30 | Not started ☐ | – | Checklists live in ROADMAP.md; a phase starts only when the previous one meets its DoD |
 
 ## 8. Decisions Locked
 - Modular monolith, shared-schema multi-tenancy (`tenant_id`)
@@ -133,23 +133,29 @@ Registry of shared code to consult **before writing anything new**.
 - **Added in Phase 1** (build/lint scaffolding): Maven Wrapper (`backend/mvnw`, `backend/mvnw.cmd`, `.mvn/wrapper/` — no system `mvn` required), `infra/.env.example`, root `README.md`.
 - **Added in Phase 2** (backend runtime — consult before duplicating): `ApiResponse<T>`/`PageMeta`/`PaginationMapper`/`PageParams` (envelopes, `common/api`), `ApiExceptionHandler` + `ApiException`/`ErrorCodes` (errors, `common/exception`), `TraceIdFilter`/`TraceIds` (traceId MDC, `common/logging`), `SecurityConfig` (deny-by-default HTTP rules), `JwtSecretValidator` (startup secret check), `package-info.java` in every TDD §5 module.
 
+- **Added in Phase 3** (DB foundation — consult before duplicating): `BaseEntity`/`TenantOwnedEntity` (`common/entity`, P4.4 will add `@TenantId`), `Tenant`/`TenantStatus`, `User`/`UserStatus` (`common/entity`), Flyway `V1`–`V3`, `DataSourceSecretValidator` (`@Profile("prod")`), `TestDatabaseProperties` (+ the `hms.test.datasource.override` guard), `MigrationTestSupport`, `MigrationIT`.
+
 | Name | Path | Purpose |
 |---|---|---|
-| Maven Wrapper + Spotless | `backend/mvnw*`, `backend/pom.xml` | `./mvnw spotless:check` / `spotless:apply` (google-java-format 1.22.0); `./mvnw test` runs the suite |
+| Maven Wrapper + Spotless | `backend/mvnw*`, `backend/pom.xml` | `./mvnw spotless:check` / `spotless:apply` (google-java-format 1.22.0); `./mvnw test` runs the suite (76 tests) |
 | Response envelope + pagination | `backend/.../common/api/` | `ApiResponse.ok/fail`, `PageMeta`, `PageParams` (default 20, max 100) per API.md §3 |
 | Error handling | `backend/.../common/exception/` | `@RestControllerAdvice`, `ErrorCodes`, field-level 422 `fields[]` |
 | Trace + JSON logging | `backend/.../common/logging/`, `logback-spring.xml` | `X-Request-Id` → MDC → `traceId` in every log line (LogstashEncoder) |
 | Security baseline | `backend/.../config/SecurityConfig.java` | deny-by-default, public: `/actuator/health`, `/error`, swagger (dev) |
+| Entities + Flyway migrations | `backend/.../common/entity/`, `backend/src/main/resources/db/migration/` | `BaseEntity`, `TenantOwnedEntity`, `User`, `Tenant`; `V1` tenants/users · `V2` roles/permissions + 53-row seed · `V3` audit_logs |
+| Test DB wiring (D1) | `backend/src/test/java/com/healthcare/hms/db/` + `backend/src/test/resources/META-INF/spring.factories` | one JVM-scoped `hms_test` MySQL injected into **every** context; `TestDatabaseProperties.apply` (bail out when `hms.test.datasource.override=true`) |
+| Migration test support | `backend/src/test/java/com/healthcare/hms/db/MigrationTestSupport.java` | one shared migration MySQL per JVM + a fresh empty schema per suite; `migrationSucceeded()`/`columnExists()`/`indexColumns()`/`username()`/`password()` |
+| Schema guards | `backend/src/test/java/com/healthcare/hms/.../` (`FlywayStartupTest`, `MigrationV1/2/3IT`, `IndexConventionIT`, `TenantIdNotNullIT`, `MigrationIT`) | Flyway runs from empty, `ddl-auto=validate`, index/naming conventions, `tenant_id NOT NULL`, clean-DB one-command path |
 | Frontend lint/format | `frontend/eslint.config.mjs`, `.prettierrc`, `tsconfig.json` | `npm run lint` / `format:check` / `typecheck` (strict) |
 | Compose stack | `infra/docker-compose.yml` | mysql/redis/minio/nginx; `--profile full` adds backend/frontend (CONF-2) |
 
 ## 13. Gotchas (read before running anything)
 1. **Shell is Windows PowerShell 5.1.** `&&` is not supported — use `cmd1; if ($?) { cmd2 }` or separate lines. UTF-8 glyphs (☐ ◐ — §) render as mojibake in the console; files are fine, verify with the Read tool, not `Get-Content`. Native stderr (e.g., `java -version`) shows up as a red `NativeCommandError` — not a failure.
-2. **What runs today (Phase 2 complete):** `docker compose up -d --wait` (4 healthy), `./mvnw spotless:check`, `./mvnw test` (30 tests, 0 failures), `npm run lint`. What does **NOT** yet exist: DB layer — `mvn spring-boot:run` needs a real DB + Flyway (Phase 3; the app also fail-fast demands `hms.security.jwt-secret`, see 11), `npm run dev`/`build` (Phase 7), `--profile full` images (P2/P7).
-3. **Git:** Phase 1 merged `893dc26`; Phase 2 on `phase/02-backend` (`43dd558`→docs close). Push/merge cadence follows the standing phase-close instruction — never force-push or rewrite pushed history. Conventional commits (ENGINEERING_RULES §10).
+2. **What runs today (Phase 3 complete):** `docker compose up -d --wait` (4 healthy), `./mvnw spotless:check`, `./mvnw test` (76 tests, 0 failures — starts a Testcontainers `mysql:8.4` the first time, ~35–45 s), `./mvnw verify -Dtest=MigrationIT`, `npm run lint`. What does **NOT** yet exist: `mvn spring-boot:run` needs a real DB **plus** the app also fail-fast demands `hms.security.jwt-secret` (see 11) — no boot smoke in Phase 3, `npm run dev`/`build` (Phase 7), `--profile full` images (P2/P7), any HTTP layer (Phase 4+).
+3. **Git:** Phase 1 merged `893dc26`; Phase 2 merged `--no-ff` to `main` as `a982918`; Phase 3 on **`phase/03-database`** (`c92b851` → docs close), **not merged/pushed yet**. Push/merge cadence follows the standing phase-close instruction — never force-push or rewrite pushed history. Conventional commits (ENGINEERING_RULES §10).
 4. **Design-doc count is 13, not 14** — the 13 = Phase 0 deliverables. `docs/` also holds `progress.md` (session tracker, added 2026-10-01 → directory now has 14 `.md` files); root holds `README.md` (P1.7). Neither changes the 13 deliverables.
 5. **Docs live in `docs/`** (CONF-1); `infra/` exists (compose, nginx, `.env.example`); `backend/` and `frontend/` hold lint scaffolding only.
-6. **Phases 0, 1 and 2 are closed** (Phase 0/1 2026-09-30, Phase 2 2026-10-01). Next phase starts only on instruction; never change a decided answer silently — raise it instead.
+6. **Phases 0, 1, 2 and 3 are closed** (Phase 0/1 2026-09-30, Phase 2 2026-10-01, Phase 3 2026-10-02 — Phase 3 branch not merged yet). Next phase starts only on instruction; never change a decided answer silently — raise it instead.
 7. **14 docs claimed anywhere** → it's the same DOC-1 counting bug, not a second source of truth.
 8. **First `./mvnw` run downloads Maven 3.9.9** from Central (~1 min, network required); there is no system `mvn` on this machine. `.gitattributes` keeps `mvnw`/`*.sh` LF so Git Bash/CI work.
 9. **Host ports must be free:** 3306, 6379, 9000, 9001, 80 — the native Windows Redis service was stopped+disabled for :6379 (§9.14, reversible `sc.exe start Redis`).
@@ -158,6 +164,12 @@ Registry of shared code to consult **before writing anything new**.
 12. **Spring CLI-style args in tests need the `--` prefix** (`runApp("--key=value")`) — without it Spring ignores the arg (P2.7 burned an hour on this).
 13. **Compiler needs `-parameters`** (set in `pom.xml`) or `@RequestParam` names are lost — if param-name errors appear, run `./mvnw clean` once; the flag only applies to recompiled classes.
 14. **Dependency names:** `spring-data-commons` (there is no `spring-boot-starter-data-commons`); logstash encoder 9.0 exposes `LogstashEncoder` (no `LoggingEventEncoder`).
+15. **MySQL always reports a primary key as `PRIMARY`** in `information_schema` — `CONSTRAINT pk_… PRIMARY KEY` is parsed but the name is discarded. `pk_` in the DDL is documentation only; schema checks must accept `PRIMARY` (see `IndexConventionIT`). MySQL also auto-creates an `fk_<table>_<ref>` index for any FK no existing index can service.
+16. **`TINYINT(1)` logs MySQL 8.4 warning 1681** (integer display width deprecated) on every migration. Cosmetic — `TINYINT(1)` is what DATABASE §2 mandates for booleans; do not "fix" it to `BOOLEAN`.
+17. **Two different test databases, deliberately:** `hms_test` (`TestDatabase`, one container per JVM, injected into every context) is **never** migrated by the migration suites; `MigrationTestSupport` starts a *separate* container and gives each suite a fresh empty schema. Do not conflate them or expect `hms_test` to contain tables.
+18. **Tests that bypass the D1 initializer must set `hms.test.datasource.override=true`** (`TestDatabaseProperties.OVERRIDE_DATASOURCE_PROPERTY`). The helper uses `addFirst`, so it otherwise wins over command-line/builder properties — this is how `MigrationIT` boots a real `SpringApplication` on its own migrated schema.
+19. **Per-migration ITs assert `db.migrationSucceeded("N")`, not `currentVersion()`.** `db.migrate()` applies *every* pending migration, so `currentVersion()` is only meaningful in `MigrationIT` (which owns the whole lifecycle) — an older `V1`/`V2` assertion broke the moment the next `Vx` file landed.
+20. **Testcontainers costs ~35–45 s per suite** and each `./mvnw test` re-pulls nothing (image cached). `docker ps -a` must be empty of `testcontainers/*` afterwards — if one lingers, RYUK/the shutdown hook was interrupted; remove it before trusting a run.
 
 ## 14. Handoff Notes
 1. Read order: PROJECT_CONTEXT → PRD → TDD → ARCHITECTURE → ENGINEERING_RULES → ROADMAP → DESIGN_SYSTEM → (DATABASE, API, SECURITY, TESTING, DEPLOYMENT, AI_DEVELOPMENT_GUIDE).

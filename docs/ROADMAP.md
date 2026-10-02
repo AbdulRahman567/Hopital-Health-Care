@@ -15,7 +15,7 @@ Each phase is small, verifiable and ends with the Definition of Done. **Only the
 | 0 | Documentation & Architecture | – | ☑ |
 | 1 | Repository & Infrastructure | 0 | ☑ |
 | 2 | Backend Foundation | 1 | ☑ |
-| 3 | Database Foundation | 2 | ☐ |
+| 3 | Database Foundation | 2 | ☑ |
 | 4 | Multi-Tenancy | 3 | ☐ |
 | 5 | Authentication | 4 | ☐ |
 | 6 | Authorization / RBAC | 5 | ☐ |
@@ -135,14 +135,37 @@ Each phase is small, verifiable and ends with the Definition of Done. **Only the
 - **Scope:** Flyway setup, baseline migrations (tenants, users, roles, permissions, audit base), naming/index conventions.
 - **Exit:** Migrations run on an empty DB and the Testcontainers integration test passes; the CI stage lands in P26.3 (CONF-4 decided 2026-09-30).
 
-- [ ] P3.1 Flyway integration; `ddl-auto=validate` in all profiles | Layer: BE | Depends: P2.8 | Verify: `./mvnw test -Dtest=FlywayStartupTest` (context starts, schema validated)
-- [ ] P3.2 Migration V1: `tenants`, `users` with audit columns and `tenant_id` rules (per CONF-5) | Layer: DB | Depends: P3.1 | Verify: `./mvnw test -Dtest=MigrationV1IT` on empty Testcontainers MySQL
-- [ ] P3.3 Migration V2: `roles`, `permissions`, `role_permissions`, `user_roles` + permission seed | Layer: DB | Depends: P3.2 | Verify: `./mvnw test -Dtest=MigrationV2IT` asserts seeded permission rows > 0
-- [ ] P3.4 Migration V3: `audit_logs` append-only base table + audit-column conventions | Layer: DB | Depends: P3.2 | Verify: `./mvnw test -Dtest=MigrationV3IT`
-- [ ] P3.5 Index rules: every FK indexed, composite indexes lead with `tenant_id` | Layer: DB | Depends: P3.4 | Verify: `./mvnw test -Dtest=IndexConventionIT` (information_schema assertions)
-- [ ] P3.6 Tenant isolation at DB level: `tenant_id NOT NULL` rejects NULL | Layer: DB | Depends: P3.2 | Verify: `./mvnw test -Dtest=TenantIdNotNullIT` expects constraint failure
-- [ ] P3.7 Migration test from a clean database in one command | Layer: BE | Depends: P3.5 | Verify: `./mvnw verify -Dtest=MigrationIT` → BUILD SUCCESS
-- [ ] P3.8 Update DATABASE.md conventions (if deviated) + PROJECT_CONTEXT phase log | Layer: DOC | Depends: P3.7 | Verify: docs committed; no unrecorded deviations
+- [x] P3.1 Flyway integration; `ddl-auto=validate` in all profiles | Layer: BE | Depends: P2.8 | Verify: `./mvnw test -Dtest=FlywayStartupTest` (context starts, schema validated)
+- [x] P3.2 Migration V1: `tenants`, `users` with audit columns and `tenant_id` rules (per CONF-5) | Layer: DB | Depends: P3.1 | Verify: `./mvnw test -Dtest=MigrationV1IT` on empty Testcontainers MySQL
+- [x] P3.3 Migration V2: `roles`, `permissions`, `role_permissions`, `user_roles` + permission seed | Layer: DB | Depends: P3.2 | Verify: `./mvnw test -Dtest=MigrationV2IT` asserts seeded permission rows > 0
+- [x] P3.4 Migration V3: `audit_logs` append-only base table + audit-column conventions | Layer: DB | Depends: P3.2 | Verify: `./mvnw test -Dtest=MigrationV3IT`
+- [x] P3.5 Index rules: every FK indexed, composite indexes lead with `tenant_id` | Layer: DB | Depends: P3.4 | Verify: `./mvnw test -Dtest=IndexConventionIT` (information_schema assertions)
+- [x] P3.6 Tenant isolation at DB level: `tenant_id NOT NULL` rejects NULL | Layer: DB | Depends: P3.2 | Verify: `./mvnw test -Dtest=TenantIdNotNullIT` expects constraint failure
+- [x] P3.7 Migration test from a clean database in one command | Layer: BE | Depends: P3.5 | Verify: `./mvnw verify -Dtest=MigrationIT` → BUILD SUCCESS
+- [x] P3.8 Update DATABASE.md conventions (if deviated) + PROJECT_CONTEXT phase log | Layer: DOC | Depends: P3.7 | Verify: docs committed; no unrecorded deviations
+
+**Verification evidence — Phase 3 (session 2026-10-02, branch `phase/03-database`, not merged/pushed — awaiting the standing phase-close instruction):**
+- P3.1 ✓ `./mvnw test -Dtest=FlywayStartupTest` → **5 tests, 0 failures** (commit `c92b851`) — `flyway-core` + `flyway-mysql` + `spring-boot-starter-data-jpa` + `mysql-connector-j` (runtime) + `spring-boot-testcontainers`/`testcontainers:{mysql,junit-jupiter}`; `ddl-auto: validate` set in `application.yml` **and re-pinned** in `application-dev.yml` / `application-prod.yml`; `DataSourceSecretValidator` `@Profile("prod")` on D7 names (`HMS_DB_URL`/`HMS_DB_USERNAME`/`HMS_DB_PASSWORD`); D1 wiring added in `src/test/resources/META-INF/spring.factories` (`ApplicationContextInitializer` **and** `ContextCustomizerFactory`) so **no pre-existing test class was touched**
+- P3.2 ✓ `./mvnw test -Dtest=MigrationV1IT` → **8 tests, 0 failures** (commit `1048264`) — `tenants` + `users` (BINARY(16) UUID PKs, `DATETIME(6)` UTC, `VARCHAR`+`CHECK` enums, full §2 audit columns); reserved platform tenant seeded at `00000000-0000-0000-0000-000000000001`; `uq_users_tenant_email` allows one email per tenant but the same email in two tenants; `chk_users_status`/`chk_tenants_status` reject unknown values; `fk_users_tenants` rejects an orphan tenant; **D2 delivered** — `BaseEntity` + `TenantOwnedEntity` (no `@TenantId` yet, that is P4.4)
+- P3.3 ✓ `./mvnw test -Dtest=MigrationV2IT` → **11 tests, 0 failures** (commit `cfb9b05`) — `permissions` seeded with **53 rows** = plan §5.4 exactly (asserted as a frozen count, plus `code = module || '_' || action` and non-null `description`), `roles`, `role_permissions`, `user_roles` with CONF-5 composite FKs carrying `tenant_id`; a cross-tenant `(tenant_id, role_id)` pair and a mismatched `user_roles` row are both rejected; supporting parent keys `uq_roles_tenant_id` / `uq_users_tenant_id` added (V1 is immutable)
+- P3.4 ✓ `./mvnw test -Dtest=MigrationV3IT` → **8 tests, 0 failures** (commit `06e757e`) — `audit_logs` append-only shape (`created_at` present, `updated_at`/`updated_by`/`version` **absent**), `tenant_id` NOT NULL, both TDD §9.3 composites present in the declared order, FKs to `tenants`/`users` each indexed, insert/select round-trip within one tenant; append-only `INSERT`/`SELECT` grants explicitly deferred to **P19.1** in the migration header
+- P3.5 ✓ `./mvnw test -Dtest=IndexConventionIT` → **4 tests, 0 failures** (commit `06ec4f9`) — permanent guard reading `information_schema.statistics`/`key_column_usage`/`referential_constraints`/`table_constraints` over **every** table (no table list to maintain): every FK column indexed · every composite index leads with `tenant_id` except platform tables `tenants`/`permissions` and single-column keys · zero `ON DELETE CASCADE` · names follow `pk_`/`fk_`/`uq_`/`idx_` (+ `chk_`), with `PRIMARY` accepted for primary keys
+- P3.6 ✓ `./mvnw test -Dtest=TenantIdNotNullIT` → **7 tests, 0 failures** (commit `0159597`) — `tenant_id = NULL` rejected on `users`, `roles`, `role_permissions`, `user_roles`, `audit_logs`; `information_schema.columns.IS_NULLABLE = 'NO'` asserted for all five; a positive-control row insert proves the failures come from the constraint rather than from bad SQL
+- P3.7 ✓ `./mvnw verify -Dtest=MigrationIT` → **BUILD SUCCESS, 3 tests, 0 failures** (commit `6f98beb`) — empty schema → `migrationsExecuted = 3` → history order `1,2,3` → `flyway info` current `3` → a real `SpringApplication` boots against that migrated schema with `hibernate.hbm2ddl.auto = validate` (the D1 initializer is bypassed via `hms.test.datasource.override=true`) → second `migrate()` executes **0** migrations
+- P3.8 ✓ this docs commit — ROADMAP checkboxes + evidence, `DATABASE.md` §2/§8 deviations recorded, `PROJECT_CONTEXT` §4–§7/§12–§13, `docs/progress.md`, `docs/features.md` group D
+
+**Final gate (2026-10-02):** `./mvnw spotless:check` → 0 · `./mvnw test` → **BUILD SUCCESS — 76 tests, 0 failures, 0 skipped** (30 Phase 2 unchanged + 46 Phase 3: 5+8+11+8+4+7+3).
+
+**Deviations from the design docs — every one recorded (P3.8 Verify: "no unrecorded deviations"):**
+1. **`audit_logs` has no `updated_at`/`updated_by`/`version`** — DATABASE §2 audit columns vs §8 append-only. §8 wins for this table; recorded in `DATABASE.md` §8 and in the V3 header.
+2. **Primary-key names surface as `PRIMARY` in MySQL** — `CONSTRAINT pk_… PRIMARY KEY` parses, but `mysql:8.4` always stores the index/constraint name as `PRIMARY` (verified live against `information_schema`). `pk_` stays in the DDL as documentation; `IndexConventionIT` and `MigrationV3IT` accept `PRIMARY`. Recorded in `DATABASE.md` §2.
+3. **MySQL auto-creates an `fk_<table>_<ref>` index** for any FK no existing index can service (`fk_audit_logs_users`, `fk_user_roles_roles` today) — the names still carry the `fk_` prefix, so no new convention is introduced. Recorded in `DATABASE.md` §2.
+4. **`users.status` values `('PENDING','ACTIVE','INACTIVE')`** — TDD §9.2 never documented them; this is the minimal set covering invite-pending, active and `STAFF_DEACTIVATE` (V1 header).
+5. **D4 — `users.first_name`/`last_name`** added beyond TDD §9.2 for human-readable actor attribution (V1 header).
+6. **`TINYINT(1)` raises MySQL 8.4 warning 1681** (integer display width deprecated) — accepted; `TINYINT(1)` is mandated by DATABASE §2 and the warning is cosmetic.
+7. **Migration suites share one MySQL container per JVM** with a fresh empty schema per suite, instead of one container per test class: identical Flyway starting point (empty database), ~40 s instead of ~4 min. That server is deliberately separate from `TestDatabase`, so `hms_test` is never migrated, dropped or mutated by the migration suites.
+
+**Explicitly not in scope (P3 plan header):** `TenantContext` / `@TenantId` filtering (Phase 4), `refresh_tokens`/`verification_tokens` (P5.1), append-only DB grants + `AuditAppendOnlyTest` (P19.1), CI stage (P26.3), HTTP layer.
 
 ### Phase 4 — Multi-Tenancy
 - **Scope:** `TenantContext`, resolution filter, Hibernate tenant filtering, `TenantOwnedEntity`, tenant-prefixed cache/storage helpers.

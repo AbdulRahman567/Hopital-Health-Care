@@ -18,8 +18,9 @@
 --   * DB-level INSERT/SELECT-only grants for the application user are Phase 19.1, NOT now.
 --     P19.1 owns AuditAppendOnlyTest; this migration only lays down the structure.
 --
--- Known deviation, recorded in PLANLOG: no updated_at/updated_by/version audit columns on
--- this table (append-only rows are never updated).
+-- Known deviation (recorded in DATABASE section 8 and the ROADMAP Phase 3 evidence block): no
+-- updated_at / updated_by / version audit columns on this table — append-only rows are never
+-- updated, so those three columns would always be a copy of created_at.
 -- =============================================================================
 
 CREATE TABLE audit_logs (
