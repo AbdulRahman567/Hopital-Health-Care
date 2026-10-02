@@ -20,8 +20,8 @@
 | A | Documentation & Architecture | 0 | – | ☑ Done |
 | B | Repository & Infrastructure | 1 | – | ☑ Done |
 | C | Backend Foundation | 2 | P0 | ☑ Done |
-| D | Database Foundation | 3 | P0 | ☐ Not started |
-| E | Multi-Tenancy Isolation | 4 | P0 | ☐ Not started |
+| D | Database Foundation | 3 | P0 | ☑ Done |
+| E | Multi-Tenancy Isolation | 4 | P0 | ☑ Done (ADR-006 HTTP 404 → P6.7) |
 | F | Authentication & Session | 5 | P0 | ☐ Not started |
 | G | Authorization / RBAC | 6 | P0 | ☐ Not started |
 | H | Frontend Foundation | 7 | P0 | ☐ Not started |
@@ -95,16 +95,16 @@
 - [x] DB-level tenancy: `tenant_id NOT NULL` rejects NULL
 - [x] Migration test from a clean database in one command (Testcontainers)
 
-### E. Multi-Tenancy Isolation — Phase 4 ☐
+### E. Multi-Tenancy Isolation — Phase 4 ☑
 
-- [ ] `TenantContext` request-scoped holder (cleared in `finally`)
-- [ ] Tenant resolved from JWT claim only — missing claim rejected
-- [ ] Client tenant hints (`X-Tenant-ID`, body, path) ignored / rejected on mismatch
-- [ ] Hibernate tenant filtering (`@TenantId`) on every tenant-owned entity
-- [ ] Cross-tenant repository isolation suite (Tenant A vs Tenant B) — 0 failures
-- [ ] Tenant-prefixed Redis keys `t:{tenantId}:` and storage keys `tenants/{tenantId}/`
-- [ ] Tenant propagation helper for async job payloads
-- [ ] Foreign-tenant resources return **404**, never 403 (ADR-006)
+- [x] `TenantContext` request-scoped holder (cleared in `finally`)
+- [x] Tenant resolved from JWT claim only — missing claim rejected
+- [x] Client tenant hints (`X-Tenant-ID`, body, path) ignored / rejected on mismatch
+- [x] Hibernate tenant filtering (`@TenantId`) on every tenant-owned entity
+- [x] Cross-tenant repository isolation suite (Tenant A vs Tenant B) — 0 failures
+- [x] Tenant-prefixed Redis keys `t:{tenantId}:` and storage keys `tenants/{tenantId}/`
+- [x] Tenant propagation helper for async job payloads
+- [ ] Foreign-tenant resources return **404**, never 403 (ADR-006) — repository primitive proven in P4.4/P4.5 (`findById` of a foreign row is `Optional.empty()`); the HTTP 404 needs a controller, so it closes at **P6.7** `WrongTenantTest`
 
 ### F. Authentication & Session — Phase 5 ☐
 
