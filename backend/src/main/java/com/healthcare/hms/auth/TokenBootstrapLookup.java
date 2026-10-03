@@ -26,6 +26,9 @@ public class TokenBootstrapLookup {
   private static final String FIND_TENANT_ID_BY_HASH =
       "SELECT tenant_id FROM verification_tokens WHERE token_hash = ? LIMIT 1";
 
+  private static final String FIND_TENANT_ID_BY_REFRESH_HASH =
+      "SELECT tenant_id FROM refresh_tokens WHERE token_hash = ? LIMIT 1";
+
   private final JdbcTemplate jdbcTemplate;
 
   public TokenBootstrapLookup(JdbcTemplate jdbcTemplate) {
@@ -38,7 +41,24 @@ public class TokenBootstrapLookup {
    *     uniform failure and never distinguishes "unknown" from "expired"
    */
   public Optional<UUID> findTenantIdByTokenHash(String tokenHash) {
-    return jdbcTemplate.queryForList(FIND_TENANT_ID_BY_HASH, byte[].class, tokenHash).stream()
+    return findTenantId(FIND_TENANT_ID_BY_HASH, tokenHash);
+  }
+
+  /**
+   * The refresh-token half of the same directory (P5.5): {@code refresh} and {@code logout} carry
+   * nothing but the cookie, so this is what tells the request which tenant to bind before it may
+   * touch a row.
+   *
+   * @param tokenHash SHA-256 hex digest of the cookie's value
+   * @return the owning tenant, or empty when no such token exists — the caller answers with the
+   *     uniform 401 and never distinguishes "unknown" from "expired" from "revoked"
+   */
+  public Optional<UUID> findTenantIdByRefreshTokenHash(String tokenHash) {
+    return findTenantId(FIND_TENANT_ID_BY_REFRESH_HASH, tokenHash);
+  }
+
+  private Optional<UUID> findTenantId(String sql, String tokenHash) {
+    return jdbcTemplate.queryForList(sql, byte[].class, tokenHash).stream()
         .map(TokenBootstrapLookup::toUuid)
         .filter(Objects::nonNull)
         .findFirst();

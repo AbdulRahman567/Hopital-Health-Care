@@ -75,6 +75,13 @@ class RegistrationVerificationTest {
     jdbcTemplate.update(
         "DELETE FROM verification_tokens"
             + " WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'p52-%')");
+    // P5.5: login now starts a refresh family, so the signed-in fixture below leaves rows in
+    // refresh_tokens. V4 has no ON DELETE CASCADE by design, so the users delete that follows
+    // would trip fk_refresh_tokens_users. Same statement AuthFixtures already runs. Declared as a
+    // second decision-D11 exception here, next to the login assertion this class gained at P5.3.
+    jdbcTemplate.update(
+        "DELETE FROM refresh_tokens"
+            + " WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'p52-%')");
     jdbcTemplate.update(
         "DELETE FROM users WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'p52-%')");
     jdbcTemplate.update("DELETE FROM tenants WHERE slug LIKE 'p52-%'");

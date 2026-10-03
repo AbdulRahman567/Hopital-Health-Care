@@ -21,6 +21,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 /**
  * Deny-by-default security (ENGINEERING_RULES section 8): only the public health probe, the OpenAPI
@@ -77,19 +78,24 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                     .permitAll()
-                    // P5.2/P5.3: exactly these four and nothing else. Anonymous by definition —
+                    // P5.2/P5.3/P5.5: exactly these six and nothing else. Anonymous by definition —
                     // they
-                    // carry no token, so TenantContext stays empty and they resolve their tenant
-                    // through the D1 bootstrap lookups instead of a bearer claim. Login answers
-                    // with
-                    // the token P4.2 already knows how to verify; it does not need to be open to be
-                    // reachable, it needs to be open because it is the only way to obtain one.
+                    // carry no bearer token, so TenantContext stays empty and they resolve their
+                    // tenant
+                    // through the D1 bootstrap lookups instead of a bearer claim. Login and refresh
+                    // answer with a token P4.2 already knows how to verify; they do not need to be
+                    // open to be reachable, they need to be open because they are the only way to
+                    // obtain one. refresh/logout read the hms_refresh cookie instead, so their
+                    // CSRF answer is CustomHeaderCsrfFilter's custom header, not Spring's
+                    // session-bound token.
                     .requestMatchers(
                         HttpMethod.POST,
                         "/api/v1/auth/register-hospital",
                         "/api/v1/auth/verify-email",
                         "/api/v1/auth/resend-verification",
-                        "/api/v1/auth/login")
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/refresh",
+                        "/api/v1/auth/logout")
                     .permitAll()
                     .anyRequest()
                     .denyAll())
@@ -138,7 +144,11 @@ public class SecurityConfig {
         // Deliberately constructed here, not exposed as a Filter bean: Spring Boot would otherwise
         // also register it in the servlet container at /* and run it a second time.
         .addFilterAfter(
-            new TenantContextFilter(objectMapper), BearerTokenAuthenticationFilter.class);
+            new TenantContextFilter(objectMapper), BearerTokenAuthenticationFilter.class)
+        // P5.5 (decision D5). Positioned immediately before authorization, which is TDD section
+        // 4.1's slot for it: rate limit -> authentication -> tenant resolution -> csrf guard ->
+        // authorization. Same inline construction, same reason as the filter above.
+        .addFilterBefore(new CustomHeaderCsrfFilter(objectMapper), AuthorizationFilter.class);
     return http.build();
   }
 

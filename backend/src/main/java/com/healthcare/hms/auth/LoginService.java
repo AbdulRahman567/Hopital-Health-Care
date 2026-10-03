@@ -1,7 +1,6 @@
 package com.healthcare.hms.auth;
 
 import com.healthcare.hms.auth.api.LoginRequest;
-import com.healthcare.hms.auth.api.LoginResponse;
 import com.healthcare.hms.auth.repository.UserRepository;
 import com.healthcare.hms.tenant.TenantBootstrapLookup;
 import com.healthcare.hms.tenant.TenantContext;
@@ -53,34 +52,39 @@ public class LoginService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenService jwtTokenService;
+  private final RefreshTokenService refreshTokenService;
 
   public LoginService(
       TenantBootstrapLookup tenantBootstrapLookup,
       TenantRepository tenantRepository,
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
-      JwtTokenService jwtTokenService) {
+      JwtTokenService jwtTokenService,
+      RefreshTokenService refreshTokenService) {
     this.tenantBootstrapLookup = tenantBootstrapLookup;
     this.tenantRepository = tenantRepository;
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtTokenService = jwtTokenService;
+    this.refreshTokenService = refreshTokenService;
   }
 
   /**
-   * Authenticates one hospital account and issues its access token.
+   * Authenticates one hospital account and starts its session: a short-lived access token plus the
+   * first refresh token of a new family (P5.5 wires the issue that P5.4 left open).
    *
+   * @param userAgent device metadata recorded on the refresh row; never used to make a decision
    * @throws InvalidCredentialsException 401 for every failure, always with the same body
    */
-  public LoginResponse login(LoginRequest request) {
+  public LoginSession login(LoginRequest request, String userAgent) {
     UUID tenantId =
         tenantBootstrapLookup
             .findTenantIdBySlug(request.hospitalSlug())
             .orElseThrow(() -> reject(request.password()));
-    return TenantContext.call(tenantId, () -> authenticate(request, tenantId));
+    return TenantContext.call(tenantId, () -> authenticate(request, tenantId, userAgent));
   }
 
-  private LoginResponse authenticate(LoginRequest request, UUID tenantId) {
+  private LoginSession authenticate(LoginRequest request, UUID tenantId, String userAgent) {
     User user = userRepository.findByEmail(request.email()).orElse(null);
     if (user == null) {
       throw reject(request.password());
@@ -99,7 +103,8 @@ public class LoginService {
       throw new InvalidCredentialsException();
     }
     log.info("Login succeeded: userId={}, tenantId={}", user.getId(), tenantId);
-    return jwtTokenService.issue(user, tenantId);
+    return new LoginSession(
+        jwtTokenService.issue(user, tenantId), refreshTokenService.issue(user, userAgent));
   }
 
   /**

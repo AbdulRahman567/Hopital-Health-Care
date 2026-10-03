@@ -74,7 +74,7 @@ public class RefreshTokenService {
     refreshTokenRepository.save(token);
 
     log.debug("Refresh token issued: familyId={}, tenantId={}", familyId, tenantId);
-    return new IssuedRefreshToken(rawToken, familyId, token.getExpiresAt());
+    return new IssuedRefreshToken(user.getId(), rawToken, familyId, token.getExpiresAt());
   }
 
   /**
@@ -195,7 +195,7 @@ public class RefreshTokenService {
     successor.setExpiresAt(expiresAt);
     successor.setUserAgent(trim(userAgent));
     refreshTokenRepository.save(successor);
-    return new IssuedRefreshToken(rawToken, familyId, expiresAt);
+    return new IssuedRefreshToken(user.getId(), rawToken, familyId, expiresAt);
   }
 
   /**
