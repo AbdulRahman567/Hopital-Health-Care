@@ -85,17 +85,16 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                     .permitAll()
-                    // P5.2/P5.3/P5.5/P5.7: exactly these eight and nothing else.
-                    // forgot-password and reset-password are the two halves of FR-2.3: the
-                    // they
-                    // carry no bearer token, so TenantContext stays empty and they resolve their
-                    // tenant
-                    // through the D1 bootstrap lookups instead of a bearer claim. Login and refresh
-                    // answer with a token P4.2 already knows how to verify; they do not need to be
-                    // open to be reachable, they need to be open because they are the only way to
-                    // obtain one. refresh/logout read the hms_refresh cookie instead, so their
-                    // CSRF answer is CustomHeaderCsrfFilter's custom header, not Spring's
-                    // session-bound token.
+                    // P5.2/P5.3/P5.5/P5.7: exactly these eight and nothing else. Anonymous by
+                    // definition - they carry no bearer token, so TenantContext stays empty and
+                    // they resolve their tenant through the D1 bootstrap lookups instead of a
+                    // bearer claim. Login and refresh answer with a token P4.2 already knows how
+                    // to verify; they do not need to be open to be reachable, they need to be open
+                    // because they are the only way to obtain one. refresh/logout read the
+                    // hms_refresh cookie instead, so their CSRF answer is CustomHeaderCsrfFilter's
+                    // custom header, not Spring's session-bound token. forgot-password and
+                    // reset-password are the two halves of FR-2.3: the first is a request any
+                    // stranger may make, the second is authorised by the emailed token itself.
                     .requestMatchers(
                         HttpMethod.POST,
                         "/api/v1/auth/register-hospital",
