@@ -22,7 +22,7 @@
 | C | Backend Foundation | 2 | P0 | ☑ Done |
 | D | Database Foundation | 3 | P0 | ☑ Done |
 | E | Multi-Tenancy Isolation | 4 | P0 | ☑ Done (ADR-006 HTTP 404 → P6.7) |
-| F | Authentication & Session | 5 | P0 | ☐ Not started |
+| F | Authentication & Session | 5 | P0 | ☑ Done (2026-10-04, `phase/05-authentication`, 221 tests) |
 | G | Authorization / RBAC | 6 | P0 | ☐ Not started |
 | H | Frontend Foundation | 7 | P0 | ☐ Not started |
 | I | Hospital & Organization Mgmt | 8 | P0/P1 | ☐ Not started |
@@ -106,23 +106,23 @@
 - [x] Tenant propagation helper for async job payloads
 - [ ] Foreign-tenant resources return **404**, never 403 (ADR-006) — repository primitive proven in P4.4/P4.5 (`findById` of a foreign row is `Optional.empty()`); the HTTP 404 needs a controller, so it closes at **P6.7** `WrongTenantTest`
 
-### F. Authentication & Session — Phase 5 ☐
+### F. Authentication & Session — Phase 5 ☑
 
-- [ ] **FR-2.1 (P0)** Email + password login with secure password hashing (Argon2id/bcrypt, TQ-2)
-- [ ] **FR-1.1 (P0)** Hospital self-registration (admin name, email, hospital name, password)
-- [ ] **FR-1.2 (P0)** Email verification on registration; unverified tenants cannot log in
-- [ ] **FR-2.5 (P0)** Email verification for invited and self-registered users
-- [ ] **FR-2.2 (P0)** Short-lived JWT access tokens (10–15 min) + refresh tokens with rotation and reuse detection (reuse revokes whole family)
-- [ ] **FR-2.6 (P0)** Logout invalidates the refresh token server-side
-- [ ] Refresh token in HttpOnly/Secure/SameSite cookie; access token in memory only (never web storage)
-- [ ] CSRF protection on cookie-authenticated endpoints
-- [ ] **FR-2.3 (P0)** Brute-force protection: Redis rate limiting + progressive account lockout (429 + `Retry-After`)
-- [ ] **FR-2.4 (P0)** Password reset via time-limited, single-use token; response never reveals account existence
-- [ ] Uniform error messages for login/reset/verify — no account enumeration
-- [ ] **FR-1.3 (P0)** Resend verification: rate limited, never times out or leaves the flow
-- [ ] **FR-1.4 (P0)** Tenant activation workflow (auto after verification, OQ-1) — never a manual DB edit
-- [ ] **FR-2.7 (P2)** MFA-ready architecture (TOTP/OTP hooks; enforcement deferred)
-- [ ] Auth + tenant isolation tests: unauthenticated → 401; tenant B cannot read tenant A users
+- [x] **FR-2.1 (P0)** Email + password login with secure password hashing (Argon2id/bcrypt, TQ-2) — BCrypt cost 12 (D3), `POST /login` P5.3, `LoginTest`
+- [x] **FR-1.1 (P0)** Hospital self-registration (admin name, email, hospital name, password) — `POST /register-hospital` P5.2, `RegistrationVerificationTest`
+- [x] **FR-1.2 (P0)** Email verification on registration; unverified tenants cannot log in — P5.2, `VerificationService` + `TokenValues`
+- [~] **FR-2.5 (P0)** Email verification for invited and self-registered users — self-registered leg proven in P5.2; the **invited-user leg lands with P9.3** (`UserInvitationIT`)
+- [x] **FR-2.2 (P0)** Short-lived JWT access tokens (10–15 min) + refresh tokens with rotation and reuse detection (reuse revokes whole family) — 12 min / 7 d (D8), `JwtTokenService` P5.3, `RefreshTokenService` P5.4, `RefreshRotationReuseTest`
+- [x] **FR-2.6 (P0)** Logout invalidates the refresh token server-side — `POST /logout` P5.5, `CookieLogoutTest`
+- [x] Refresh token in HttpOnly/Secure/SameSite cookie; access token in memory only (never web storage) — `RefreshCookieBuilder` (D6); access token only ever in the login response body
+- [x] CSRF protection on cookie-authenticated endpoints — `CustomHeaderCsrfFilter`, custom `X-Requested-With` header on `/refresh` + `/logout` (D5)
+- [x] **FR-2.3 (P0)** Brute-force protection: Redis rate limiting + progressive account lockout (429 + `Retry-After`) — `RateLimitFilter`/`LockoutService` P5.6, `RateLimitPolicyTest` + `RateLimitLockoutTest`
+- [x] **FR-2.4 (P0)** Password reset via time-limited, single-use token; response never reveals account existence — `PasswordResetService` P5.7, `PasswordResetTest`
+- [x] Uniform error messages for login/reset/verify — no account enumeration — one 401 for every login failure; uniform 202 for email-shaped requests (D9)
+- [x] **FR-1.3 (P0)** Resend verification: rate limited, never times out or leaves the flow — P5.2 + `email-ip-limit` P5.6; the **async UI re-verification stays at P18.4**
+- [~] **FR-1.4 (P0)** Tenant activation workflow (auto after verification, OQ-1) — never a manual DB edit — mechanism (slug → `TenantStatus.ACTIVE`) proven in P5.2; the **end-to-end `TenantActivationIT` stays at P8.4**
+- [x] **FR-2.7 (P2)** MFA-ready architecture (TOTP/OTP hooks; enforcement deferred) — D12 login seam in `LoginService` + `mfa_enabled`/`mfa_enforced_at` columns in V1
+- [x] Auth + tenant isolation tests: unauthenticated → 401; tenant B cannot read tenant A users — `AuthTenantIsolationTest` (10 tests, P5.8)
 
 ### G. Authorization / RBAC — Phase 6 ☐
 
