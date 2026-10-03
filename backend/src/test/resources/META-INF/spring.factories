@@ -1,7 +1,15 @@
 # Phase 3 (D1) — every test context in this module talks to one JVM-scoped Testcontainers MySQL.
 # The ApplicationContextInitializer entry covers raw SpringApplication runs; the
 # ContextCustomizerFactory entry covers @SpringBootTest / TestContext contexts.
+#
+# Phase 5 (D7) — the same two entries for Redis. spring-boot-starter-data-redis puts a
+# RedisHealthIndicator on the classpath, so /actuator/health would report DOWN without a
+# reachable server, and the fail-closed limiter would reject every auth request in the suite.
+# See TestRedis for the full reasoning.
 org.springframework.context.ApplicationContextInitializer=\
-com.healthcare.hms.db.TestDatabaseContextInitializer
+com.healthcare.hms.db.TestDatabaseContextInitializer,\
+com.healthcare.hms.db.TestRedisContextInitializer
 org.springframework.test.context.ContextCustomizerFactory=\
-com.healthcare.hms.db.TestDatabaseContextCustomizerFactory
+com.healthcare.hms.db.TestDatabaseContextCustomizerFactory,\
+com.healthcare.hms.db.TestRedisContextCustomizerFactory,\
+com.healthcare.hms.db.TestRateLimitContextCustomizerFactory

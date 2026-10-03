@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.healthcare.hms.common.api.ApiErrorResponse;
 import com.healthcare.hms.common.api.ErrorDetail;
 import com.healthcare.hms.common.api.FieldViolation;
+import com.healthcare.hms.common.ratelimit.RateLimitedException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -80,6 +82,16 @@ public class ApiExceptionHandler {
         ErrorCodes.VALIDATION_FAILED,
         "Malformed request.",
         List.of(new FieldViolation(ex.getName(), "must be a valid " + typeName + ".")));
+  }
+
+  @ExceptionHandler(RateLimitedException.class)
+  public ResponseEntity<ApiErrorResponse> handleRateLimited(RateLimitedException ex) {
+    // The envelope is identical to every other error; only the status, the code and the
+    // Retry-After header differ. RateLimitFilter writes the same triple for the requests it
+    // rejects before authentication, so a caller cannot tell which half of the limiter answered.
+    return ResponseEntity.status(ex.getStatus())
+        .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+        .body(ApiErrorResponse.of(ErrorDetail.of(ex.getCode(), ex.getMessage())));
   }
 
   @ExceptionHandler(ApiException.class)

@@ -2,10 +2,14 @@ package com.healthcare.hms.auth;
 
 import com.healthcare.hms.auth.api.LoginRequest;
 import com.healthcare.hms.auth.repository.UserRepository;
+import com.healthcare.hms.common.ratelimit.RateLimitProperties;
+import com.healthcare.hms.common.ratelimit.RateLimiterService;
 import com.healthcare.hms.tenant.TenantBootstrapLookup;
 import com.healthcare.hms.tenant.TenantContext;
+import com.healthcare.hms.tenant.TenantKeys;
 import com.healthcare.hms.tenant.TenantRepository;
 import com.healthcare.hms.tenant.TenantStatus;
+import java.time.Duration;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +57,9 @@ public class LoginService {
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenService jwtTokenService;
   private final RefreshTokenService refreshTokenService;
+  private final RateLimiterService rateLimiter;
+  private final RateLimitProperties rateLimitProperties;
+  private final LockoutService lockoutService;
 
   public LoginService(
       TenantBootstrapLookup tenantBootstrapLookup,
@@ -60,13 +67,19 @@ public class LoginService {
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
       JwtTokenService jwtTokenService,
-      RefreshTokenService refreshTokenService) {
+      RefreshTokenService refreshTokenService,
+      RateLimiterService rateLimiter,
+      RateLimitProperties rateLimitProperties,
+      LockoutService lockoutService) {
     this.tenantBootstrapLookup = tenantBootstrapLookup;
     this.tenantRepository = tenantRepository;
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtTokenService = jwtTokenService;
     this.refreshTokenService = refreshTokenService;
+    this.rateLimiter = rateLimiter;
+    this.rateLimitProperties = rateLimitProperties;
+    this.lockoutService = lockoutService;
   }
 
   /**
@@ -75,33 +88,53 @@ public class LoginService {
    *
    * @param userAgent device metadata recorded on the refresh row; never used to make a decision
    * @throws InvalidCredentialsException 401 for every failure, always with the same body
+   * @throws com.healthcare.hms.common.ratelimit.RateLimitedException 429 when the account budget is
+   *     spent or the account is locked (decision D7)
    */
   public LoginSession login(LoginRequest request, String userAgent) {
     UUID tenantId =
         tenantBootstrapLookup
             .findTenantIdBySlug(request.hospitalSlug())
             .orElseThrow(() -> reject(request.password()));
+
+    // Both budgets are charged before the account is looked up (decision D7): an address with no
+    // row behind it must consume exactly the same budget and lock at exactly the same attempt as a
+    // real one, or the 429 itself becomes an existence oracle. The key is namespaced by the slug
+    // the caller supplied, never by a user id.
+    rateLimiter.consume(
+        TenantKeys.redis(tenantId, "rl", "login", request.email()),
+        rateLimitProperties.getLoginAccountLimit(),
+        rateLimitProperties.getLoginAccountWindow());
+    Duration lockedFor = lockoutService.remainingLock(tenantId, request.email());
+    if (lockedFor != null) {
+      LockoutService.reject(lockedFor);
+    }
     return TenantContext.call(tenantId, () -> authenticate(request, tenantId, userAgent));
   }
 
   private LoginSession authenticate(LoginRequest request, UUID tenantId, String userAgent) {
     User user = userRepository.findByEmail(request.email()).orElse(null);
     if (user == null) {
+      lockoutService.recordFailure(tenantId, request.email(), null);
       throw reject(request.password());
     }
     if (!passwordMatches(request.password(), user.getPasswordHash(), tenantId)) {
+      lockoutService.recordFailure(tenantId, request.email(), user);
       throw new InvalidCredentialsException();
     }
     if (!tenantIsActive(tenantId) || user.getStatus() != UserStatus.ACTIVE) {
       log.debug("Login rejected: tenant or account is not active (tenantId={})", tenantId);
+      lockoutService.recordFailure(tenantId, request.email(), user);
       throw new InvalidCredentialsException();
     }
     if (user.isMfaEnabled()) {
       // Decision D12: the second factor exists in the schema but its flow does not, so a MFA
       // account fails closed instead of being handed a token that skipped its factor.
       log.debug("Login rejected: MFA is enabled but not yet supported (tenantId={})", tenantId);
+      lockoutService.recordFailure(tenantId, request.email(), user);
       throw new InvalidCredentialsException();
     }
+    lockoutService.recordSuccess(tenantId, request.email(), user);
     log.info("Login succeeded: userId={}, tenantId={}", user.getId(), tenantId);
     return new LoginSession(
         jwtTokenService.issue(user, tenantId), refreshTokenService.issue(user, userAgent));

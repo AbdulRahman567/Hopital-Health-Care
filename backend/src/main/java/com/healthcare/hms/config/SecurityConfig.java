@@ -3,6 +3,8 @@ package com.healthcare.hms.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.healthcare.hms.common.api.ApiErrorWriter;
 import com.healthcare.hms.common.exception.ErrorCodes;
+import com.healthcare.hms.common.ratelimit.RateLimitProperties;
+import com.healthcare.hms.common.ratelimit.RateLimiterService;
 import com.healthcare.hms.tenant.TenantContextFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -63,7 +65,12 @@ public class SecurityConfig {
 
   @Bean
   SecurityFilterChain securityFilterChain(
-      HttpSecurity http, ObjectMapper objectMapper, JwtDecoder jwtDecoder) throws Exception {
+      HttpSecurity http,
+      ObjectMapper objectMapper,
+      JwtDecoder jwtDecoder,
+      RateLimiterService rateLimiter,
+      RateLimitProperties rateLimitProperties)
+      throws Exception {
     // D5: Spring's CSRF token is session-bound, and this app is stateless — it would reject every
     // POST from the first byte Phase 5 sends. The guard that does apply (a custom header on the
     // cookie endpoints) arrives with P5.5, where CookieLogoutTest asserts it.
@@ -141,6 +148,12 @@ public class SecurityConfig {
                                 403,
                                 ErrorCodes.ACCESS_DENIED,
                                 "Access denied.")))
+        // P5.6 (decision D7). TDD section 4.1's very first stage, so it is chained ahead of the
+        // bearer filter: rate limit -> authentication -> tenant resolution -> csrf guard ->
+        // authorization. Same inline construction as the two filters below, for the same reason.
+        .addFilterBefore(
+            new RateLimitFilter(rateLimiter, rateLimitProperties, objectMapper),
+            BearerTokenAuthenticationFilter.class)
         // Deliberately constructed here, not exposed as a Filter bean: Spring Boot would otherwise
         // also register it in the servlet container at /* and run it a second time.
         .addFilterAfter(

@@ -2,6 +2,9 @@ package com.healthcare.hms.auth;
 
 import com.healthcare.hms.auth.repository.UserRepository;
 import com.healthcare.hms.auth.repository.VerificationTokenRepository;
+import com.healthcare.hms.common.ratelimit.RateLimitKeys;
+import com.healthcare.hms.common.ratelimit.RateLimitProperties;
+import com.healthcare.hms.common.ratelimit.RateLimiterService;
 import com.healthcare.hms.tenant.Tenant;
 import com.healthcare.hms.tenant.TenantBootstrapLookup;
 import com.healthcare.hms.tenant.TenantContext;
@@ -39,6 +42,8 @@ public class VerificationService {
   private final VerificationMailer verificationMailer;
   private final TransactionTemplate transactionTemplate;
   private final AuthProperties properties;
+  private final RateLimiterService rateLimiter;
+  private final RateLimitProperties rateLimitProperties;
 
   public VerificationService(
       TokenBootstrapLookup tokenBootstrapLookup,
@@ -48,7 +53,9 @@ public class VerificationService {
       UserRepository userRepository,
       VerificationMailer verificationMailer,
       TransactionTemplate transactionTemplate,
-      AuthProperties properties) {
+      AuthProperties properties,
+      RateLimiterService rateLimiter,
+      RateLimitProperties rateLimitProperties) {
     this.tokenBootstrapLookup = tokenBootstrapLookup;
     this.tenantBootstrapLookup = tenantBootstrapLookup;
     this.verificationTokenRepository = verificationTokenRepository;
@@ -57,6 +64,8 @@ public class VerificationService {
     this.verificationMailer = verificationMailer;
     this.transactionTemplate = transactionTemplate;
     this.properties = properties;
+    this.rateLimiter = rateLimiter;
+    this.rateLimitProperties = rateLimitProperties;
   }
 
   /**
@@ -111,8 +120,18 @@ public class VerificationService {
    *
    * @param email the account address
    * @param hospitalSlug the hospital slug from the request (D2), never a tenant id
+   * @throws com.healthcare.hms.common.ratelimit.RateLimitedException 429 when this address has
+   *     asked three times in an hour (decision D7)
    */
   public void resendVerification(String email, String hospitalSlug) {
+    // The very first statement, ahead of the slug lookup: resend shares registration's per-address
+    // bucket, and it has to be charged before anything that could reveal whether the address exists
+    // (decision D7). An unknown slug therefore still spends budget, exactly like a real one.
+    rateLimiter.consume(
+        RateLimitKeys.email(email),
+        rateLimitProperties.getEmailAccountLimit(),
+        rateLimitProperties.getEmailAccountWindow());
+
     UUID tenantId = tenantBootstrapLookup.findTenantIdBySlug(hospitalSlug).orElse(null);
     if (tenantId == null) {
       return;

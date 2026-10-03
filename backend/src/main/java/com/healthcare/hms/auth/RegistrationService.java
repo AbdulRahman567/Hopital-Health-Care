@@ -6,6 +6,9 @@ import com.healthcare.hms.auth.repository.VerificationTokenRepository;
 import com.healthcare.hms.common.api.FieldViolation;
 import com.healthcare.hms.common.exception.ConflictException;
 import com.healthcare.hms.common.exception.ErrorCodes;
+import com.healthcare.hms.common.ratelimit.RateLimitKeys;
+import com.healthcare.hms.common.ratelimit.RateLimitProperties;
+import com.healthcare.hms.common.ratelimit.RateLimiterService;
 import com.healthcare.hms.tenant.TenantContext;
 import com.healthcare.hms.tenant.TenantRepository;
 import java.nio.ByteBuffer;
@@ -63,6 +66,8 @@ public class RegistrationService {
   private final VerificationMailer verificationMailer;
   private final TransactionTemplate transactionTemplate;
   private final JdbcTemplate jdbcTemplate;
+  private final RateLimiterService rateLimiter;
+  private final RateLimitProperties rateLimitProperties;
 
   public RegistrationService(
       SlugGenerator slugGenerator,
@@ -74,7 +79,9 @@ public class RegistrationService {
       VerificationTokenRepository verificationTokenRepository,
       VerificationMailer verificationMailer,
       TransactionTemplate transactionTemplate,
-      JdbcTemplate jdbcTemplate) {
+      JdbcTemplate jdbcTemplate,
+      RateLimiterService rateLimiter,
+      RateLimitProperties rateLimitProperties) {
     this.slugGenerator = slugGenerator;
     this.tenantRepository = tenantRepository;
     this.passwordPolicy = passwordPolicy;
@@ -85,6 +92,8 @@ public class RegistrationService {
     this.verificationMailer = verificationMailer;
     this.transactionTemplate = transactionTemplate;
     this.jdbcTemplate = jdbcTemplate;
+    this.rateLimiter = rateLimiter;
+    this.rateLimitProperties = rateLimitProperties;
   }
 
   /**
@@ -98,8 +107,19 @@ public class RegistrationService {
    * @throws ConflictException 409 when the slug already exists
    * @throws com.healthcare.hms.common.exception.FieldValidationException 422 when the password
    *     breaks the policy
+   * @throws com.healthcare.hms.common.ratelimit.RateLimitedException 429 when this address has
+   *     asked three times in an hour (decision D7)
    */
   public void register(RegisterHospitalRequest request) {
+    // Before everything else &mdash; before the policy check, before the slug, before any row is
+    // read &mdash; so a repeated address costs the same budget whether or not it already exists
+    // (decision D7). The per-address bucket is the anonymous one from RateLimitKeys because no
+    // tenant exists yet to namespace under.
+    rateLimiter.consume(
+        RateLimitKeys.email(request.email()),
+        rateLimitProperties.getEmailAccountLimit(),
+        rateLimitProperties.getEmailAccountWindow());
+
     passwordPolicy.validate(request.password());
     String slug = slugGenerator.generate(request.hospitalName());
 
