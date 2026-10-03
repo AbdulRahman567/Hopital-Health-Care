@@ -84,8 +84,11 @@ public class ApiExceptionHandler {
 
   @ExceptionHandler(ApiException.class)
   public ResponseEntity<ApiErrorResponse> handleApiException(ApiException ex) {
-    return ResponseEntity.status(ex.getStatus())
-        .body(ApiErrorResponse.of(ErrorDetail.of(ex.getCode(), ex.getMessage())));
+    ErrorDetail detail =
+        ex.getFields() == null
+            ? ErrorDetail.of(ex.getCode(), ex.getMessage())
+            : ErrorDetail.of(ex.getCode(), ex.getMessage(), ex.getFields());
+    return ResponseEntity.status(ex.getStatus()).body(ApiErrorResponse.of(detail));
   }
 
   @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})

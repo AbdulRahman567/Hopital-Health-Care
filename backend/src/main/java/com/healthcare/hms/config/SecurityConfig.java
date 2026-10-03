@@ -1,7 +1,5 @@
 package com.healthcare.hms.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.healthcare.hms.common.api.ApiErrorWriter;
 import com.healthcare.hms.common.exception.ErrorCodes;
@@ -13,8 +11,11 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -22,16 +23,21 @@ import org.springframework.security.oauth2.server.resource.web.authentication.Be
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Deny-by-default security (ENGINEERING_RULES section 8): only the public health probe is open;
- * every other request is rejected with a standard 401/403 JSON envelope. Swagger/OpenAPI paths stay
- * permitted so springdoc's own switch decides visibility — enabled in dev (200), disabled in prod
- * (404, P2.6). Later phases replace {@code denyAll()} endpoint-by-endpoint with declared
- * permissions.
+ * Deny-by-default security (ENGINEERING_RULES section 8): only the public health probe, the OpenAPI
+ * switch and — since Phase 5 — the three anonymous auth endpoints are open; every other request is
+ * rejected with a standard 401/403 JSON envelope. Swagger/OpenAPI paths stay permitted so
+ * springdoc's own switch decides visibility — enabled in dev (200), disabled in prod (404, P2.6).
+ * Later phases replace {@code denyAll()} endpoint-by-endpoint with declared permissions.
  *
  * <p>P4.2 adds bearer-token verification (decision D1-A): an HS256 {@link JwtDecoder} built from
  * the existing {@code hms.security.jwt-secret}, so {@link TenantContextFilter} can read a verified
  * {@code tenantId} claim. Pipeline order stays TDD section 4.1 — authentication, then tenant
  * resolution, then authorization.
+ *
+ * <p>P5.2 opens {@code register-hospital}, {@code verify-email} and {@code resend-verification} and
+ * switches the session to STATELESS with CSRF disabled (decision D5): a stateless bearer API gains
+ * nothing from Spring's session-bound token, and leaving it on would 403 the very first POST before
+ * P5.5 lands the custom-header guard that actually protects the cookie endpoints.
  */
 @Configuration
 @EnableWebSecurity
@@ -55,7 +61,12 @@ public class SecurityConfig {
   @Bean
   SecurityFilterChain securityFilterChain(
       HttpSecurity http, ObjectMapper objectMapper, JwtDecoder jwtDecoder) throws Exception {
-    http.csrf(withDefaults())
+    // D5: Spring's CSRF token is session-bound, and this app is stateless — it would reject every
+    // POST from the first byte Phase 5 sends. The guard that does apply (a custom header on the
+    // cookie endpoints) arrives with P5.5, where CookieLogoutTest asserts it.
+    http.csrf(AbstractHttpConfigurer::disable)
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers("/actuator/health", "/actuator/health/**")
@@ -63,6 +74,15 @@ public class SecurityConfig {
                     .requestMatchers("/error")
                     .permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+                    .permitAll()
+                    // P5.2: exactly these three and nothing else. Anonymous by definition — they
+                    // carry no token, so TenantContext stays empty and they resolve their tenant
+                    // through the D1 bootstrap lookups instead of a bearer claim.
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/v1/auth/register-hospital",
+                        "/api/v1/auth/verify-email",
+                        "/api/v1/auth/resend-verification")
                     .permitAll()
                     .anyRequest()
                     .denyAll())
