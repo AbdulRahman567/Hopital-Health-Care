@@ -3,7 +3,7 @@
 > Session-crossing dashboard. **Update this file at every phase close (and after any significant fix).**
 > Detail lives elsewhere: status truth = `ROADMAP.md` checkboxes · memory = `PROJECT_CONTEXT.md` · rules = `ENGINEERING_RULES.md` · prompts = `AI_DEVELOPMENT_GUIDE.md`.
 
-**Last updated:** 2026-10-03 — **Phase 4 Multi-Tenancy closed** (8/8 tasks, 147 tests re-verified green; code merged `c2ed23b` + pushed; P4.8 docs re-committed on `phase/05-authentication` after the Phase 5 rollback)
+**Last updated:** 2026-10-04 — **Phase 5 Authentication closed** (11/11 tasks incl. P5.11 security fixes, 236 tests re-verified green; **not merged, not pushed**)
 
 ---
 
@@ -16,10 +16,10 @@
 | 2 — Backend Foundation | ☑ **Done** | 9/9 tasks (2026-10-01); re-verified 2026-10-02; 30 tests green; merged `--no-ff` → `main` as `a982918` |
 | 3 — Database Foundation | ☑ **Done** | 8/8 tasks (2026-10-02); 76 tests green; merged `--no-ff` → `main` as `493c6e0` + pushed |
 | 4 — Multi-Tenancy | ☑ **Done** | 8/8 tasks (2026-10-03); 147 tests green; merged `--no-ff` → `main` as `c2ed23b` + pushed; P4.8 docs re-closed same day |
-| 5 — Authentication | ☑ **Done** | 10/10 tasks (2026-10-04); 221 tests green; built from scratch on `phase/05-authentication` after the rollback; **not merged, not pushed**; SEC-1…SEC-5 recorded in `PROJECT_CONTEXT` §11 |
+| 5 — Authentication | ☑ **Done** | 11/11 tasks (2026-10-04); 236 tests green; built from scratch on `phase/05-authentication` after the rollback; **not merged, not pushed**; P5.9 findings `SEC-1`/`SEC-2`/`SEC-3` **fixed at P5.11**, `SEC-4`/`SEC-5` accepted — all in `PROJECT_CONTEXT` §11 |
 | 6–30 | ☐ Not started | Next: **Phase 6 — Authorization / RBAC** (starts at **P6.1**) — only on user instruction |
 
-**Verified snapshot (last run 2026-10-04):** `./mvnw -q spotless:check` **0** · `./mvnw clean test` **221 tests, 0 failures, 0 skipped** (147 pre-existing + 74 new across 9 classes) · `docker compose ps` **4/4 healthy** · no `testcontainers/*` left in `docker ps -a` · tree clean after this docs commit · no secrets tracked (surefire uses a test-only JWT secret).
+**Verified snapshot (last run 2026-10-04):** `./mvnw -q spotless:check` **0** · `./mvnw clean test` **236 tests, 0 failures, 0 skipped** (147 pre-existing + 74 for P5.1…P5.9 + 15 for P5.11) · `docker compose ps` **4/4 healthy** · no `testcontainers/*` left in `docker ps -a` · tree clean after this docs commit · no secrets tracked (surefire uses a test-only JWT secret).
 
 ## 2. What Phase 5 delivered (2026-10-04)
 
@@ -32,7 +32,8 @@
 - **Password reset (P5.7, `5458c71`):** `POST /forgot-password` + `POST /reset-password`, 30-min single-use token (D8), **policy is checked before the token is consumed**, `revokeAllFamiliesForUser`, uniform 202 (D9) — 8 tests
 - **Tenant isolation suite (P5.8, `c55d067`):** `AuthTenantIsolationTest`, **test-only, no production code touched** — 401 ladder over every public route, authenticated caller 403 `denyAll()`, cross-tenant credentials byte-identical, claim/`sub` assertions, forged-but-valid token → `visible=false`, refresh isolation, `TenantContext.find()` empty after every request — 10 tests
 - **Security review (P5.9, `dab7f55`):** AI_DEVELOPMENT_GUIDE §7 run read-only over `4892016..HEAD` (86 files) → **0 P0/P1 · 1 P2 (`SEC-1`, nginx forward-headers absent) · 3 P3 (`SEC-2`…`SEC-4`) · 1 informational (`SEC-5`)**; ISO-6 delivered, ISO-7 re-audited; **no ADR raised**
-- **Gates:** `./mvnw clean test` → **221 tests, 0 failures**; `./mvnw -q spotless:check` → 0; **D11 = exactly 3 sanctioned pre-existing-test edits** (`MigrationIT`, `TenantIdNotNullIT`, `spring.factories`)
+- **P5.11 security fixes (`bd07768`):** **`SEC-1`** — `server.forward-headers-strategy: native` (Tomcat `RemoteIpValve`, so `getRemoteAddr()` really is the client behind nginx) + a pinned `server.tomcat.remoteip.internal-proxies` overridable with `HMS_TRUSTED_PROXY`; **`SEC-2`** — `RateLimitFilter` and `CustomHeaderCsrfFilter` match with `PathPatternRequestMatcher` instead of a raw `requestURI` compare; **`SEC-3`** — new `common/logging/Pii` masks address/key at the three sites that logged them. `SEC-4` (pessimistic lock) and `SEC-5` (stale reset links) stay **accepted** by decision. Three new suites: `AuthFilterPathParityTest` 7 · `PiiMaskTest` 5 · `ForwardedAddressTest` 3
+- **Gates:** `./mvnw clean test` → **236 tests, 0 failures**; `./mvnw -q spotless:check` → 0; **D11 = 3 sanctioned pre-existing-test edits** (`MigrationIT`, `TenantIdNotNullIT`, `spring.factories`) **+ 2 recorded test-infra deviations** (P5.8 probe controller, P5.11 Hikari cap in `TestDatabaseProperties`)
 
 ### What Phase 4 delivered (2026-10-03) — for reference
 
@@ -129,15 +130,17 @@
 | `03498fb` | docs: repair the garbled `anonymous-routes` comment left in `SecurityConfig` by P5.7 |
 | `c55d067` | P5.8 `AuthTenantIsolationTest` — test-only, 10 tests, no production code touched |
 | `dab7f55` | P5.9 security review: SEC-1…SEC-5 + ISO-6/ISO-7 in `PROJECT_CONTEXT` §11, no ADR |
-| (this commit) | P5.10 docs close: ROADMAP ☑ + evidence block, PROJECT_CONTEXT §4–§7/§12/§13, `progress.md`, `features.md` group F |
+| `1e80f9f` | P5.10 docs close: ROADMAP ☑ + evidence block, PROJECT_CONTEXT §4–§7/§12/§13, `progress.md`, `features.md` group F |
+| `bd07768` | P5.11 fix: `SEC-1` forward-headers + pinned proxy, `SEC-2` `PathPatternRequestMatcher` in both filters, `SEC-3` `Pii` masking (+ 3 new test classes, Hikari cap) |
+| (this commit) | P5.11 docs close: ROADMAP ☑ + evidence, DEPLOYMENT §6, `PROJECT_CONTEXT` §4–§7/§11/§12/§13, `progress.md`, `features.md` group F |
 
 ## 4. Next session — how to resume
 
 1. Read order: **this file → `PROJECT_CONTEXT.md` (§4 state, §5 next action, §13 gotchas) → `ROADMAP.md`** current phase.
-2. Start with "continue", or paste the Phase Prompt (`AI_DEVELOPMENT_GUIDE.md` §6) for **Phase 5**.
+2. Start with "continue", or paste the Phase Prompt (`AI_DEVELOPMENT_GUIDE.md` §6) for **Phase 6**.
 3. **Phase 5 is complete but NOT merged.** Merge it first (`git merge --no-ff phase/05-authentication` on `main`, then push) — only on user instruction — before any Phase 6 work touches `main`.
-4. Phase 6 starts from `main` on a new `phase/06-authorization` branch. Phase 5 lives entirely on **`phase/05-authentication`** (`2c73963`…`dab7f55` + this docs commit); the superseded first attempt is only in `backup/pre-b31dad7-reset` (`f9f2db2`) — **never cherry-pick from it** (the user chose a from-scratch rewrite). Conventional commits; one task per "continue"; stop at DoD. `Plans/` stays untracked — never `git add Plans/`. Write commit messages through a temp file (`git commit -F`) — PowerShell mangles quotes in `-m`.
-5. **Next task = P6.1** (authorization module per ARCHITECTURE §3: `authz` depends on common only). Phase 5's open items to carry in: **SEC-1** (nginx sends `X-Forwarded-For` but `server.forward-headers-strategy` is not configured → rate limiting keyed on the proxy IP) re-audited at the first deployment task; **D6** `SameSite=Lax` assumes one registrable domain (P27); `features.md` FR-1.4 / FR-2.5 closing tests at **P8.4** / **P9.3**.
+4. Phase 6 starts from `main` on a new `phase/06-authorization` branch. Phase 5 lives entirely on **`phase/05-authentication`** (`2c73963`…`bd07768` + two docs commits); the superseded first attempt is only in `backup/pre-b31dad7-reset` (`f9f2db2`) — **never cherry-pick from it** (the user chose a from-scratch rewrite). Conventional commits; one task per "continue"; stop at DoD. `Plans/` stays untracked — never `git add Plans/`. Write commit messages through a temp file (`git commit -F`) — PowerShell mangles quotes in `-m`.
+5. **Next task = P6.1** (authorization module per ARCHITECTURE §3: `authz` depends on common only). Phase 5's carry-overs: **`SEC-1`/`SEC-2`/`SEC-3` are fixed** (P5.11) so nothing to re-audit there; **`SEC-4`** pessimistic lock stays accepted (revisit P23.1/P23.7); **D6** `SameSite=Lax` assumes one registrable domain — recorded on ROADMAP **P27.1** and DEPLOYMENT §6; `features.md` FR-1.4 / FR-2.5 closing tests at **P8.4** / **P9.3**.
 6. Stack is running (4× healthy). Fresh start: `cd infra && docker compose up -d --wait`. Full commands = `PROJECT_CONTEXT` §16 / `README.md`.
 
 ## 5. Top constraints for the new session
@@ -163,4 +166,5 @@
 | 2026-10-02 | Phase 3 P3.1–P3.8 complete on `phase/03-database` (D1–D7 + CONF-5 accepted up front): Flyway V1–V3, `ddl-auto=validate`, 53-permission seed, index/`tenant_id`/`MigrationIT` guards, 76 tests green, 7 deviations recorded → **merged `493c6e0` + pushed (phase closed)** |
 | 2026-10-03 | Phase 4 P4.1–P4.8 complete on `phase/04-multitenancy` (D1–D8 accepted up front): tenant claim → `TenantContext` → `@TenantId` filtering, `X-Tenant-ID` mismatch → 404, isolation suite, `TenantKeys`/`TenantJobPayload`, security review (0 P0/P1/P2, **no ADR**), 147 tests green, 7 deviations recorded → **merged `c2ed23b` + pushed** |
 | 2026-10-03 | Phase 5 P5.1–P5.5 built on `phase/05-authentication` (registration, login, refresh rotation, cookie transport) — then **rolled back to `b31dad7` (P4.7) on user instruction**; code preserved in `backup/pre-b31dad7-reset` (`f9f2db2`); uncommitted P5.6 rate-limit/lockout work deleted; P4.8 docs re-closed here, suite re-run green (147/0) |
-| 2026-10-04 | **Phase 5 rebuilt from scratch** (user chose rewrite over recovery): P5.1–P5.10 complete on `phase/05-authentication` (`2c73963`…`dab7f55`) — V4 tokens, registration + verification, login, rotation, cookie/CSRF/logout, Redis rate limit + lockout, password reset, isolation suite, security review (SEC-1…SEC-5, no ADR), docs close; **221 tests green, spotless 0** → **not merged, awaiting instruction** |
+| 2026-10-04 | **Phase 5 rebuilt from scratch** (user chose rewrite over recovery): P5.1–P5.10 complete on `phase/05-authentication` (`2c73963`…`dab7f55`) — V4 tokens, registration + verification, login, rotation, cookie/CSRF/logout, Redis rate limit + lockout, password reset, isolation suite, security review (SEC-1…SEC-5, no ADR), docs close `1e80f9f`; **221 tests green, spotless 0** |
+| 2026-10-04 | **P5.11 security fixes** (scope fixed by the user: `SEC-1`/`SEC-2`/`SEC-3` only, D6 = docs only, `SEC-4`/`SEC-5` stay accepted): forward-headers + pinned proxy allowlist, both filters on `PathPatternRequestMatcher`, `Pii` address masking, 3 new suites (+15 tests) and a Hikari cap after a MySQL 151-connection blow-up; `bd07768` + this docs commit → **236 tests green, spotless 0** → **not merged, awaiting instruction; Phase 6 not started** |

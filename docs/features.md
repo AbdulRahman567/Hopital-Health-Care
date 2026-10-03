@@ -22,7 +22,7 @@
 | C | Backend Foundation | 2 | P0 | ☑ Done |
 | D | Database Foundation | 3 | P0 | ☑ Done |
 | E | Multi-Tenancy Isolation | 4 | P0 | ☑ Done (ADR-006 HTTP 404 → P6.7) |
-| F | Authentication & Session | 5 | P0 | ☑ Done (2026-10-04, `phase/05-authentication`, 221 tests) |
+| F | Authentication & Session | 5 | P0 | ☑ Done (2026-10-04, `phase/05-authentication`, 236 tests; P5.11 fixed SEC-1/SEC-2/SEC-3) |
 | G | Authorization / RBAC | 6 | P0 | ☐ Not started |
 | H | Frontend Foundation | 7 | P0 | ☐ Not started |
 | I | Hospital & Organization Mgmt | 8 | P0/P1 | ☐ Not started |
@@ -116,7 +116,7 @@
 - [x] **FR-2.6 (P0)** Logout invalidates the refresh token server-side — `POST /logout` P5.5, `CookieLogoutTest`
 - [x] Refresh token in HttpOnly/Secure/SameSite cookie; access token in memory only (never web storage) — `RefreshCookieBuilder` (D6); access token only ever in the login response body
 - [x] CSRF protection on cookie-authenticated endpoints — `CustomHeaderCsrfFilter`, custom `X-Requested-With` header on `/refresh` + `/logout` (D5)
-- [x] **FR-2.3 (P0)** Brute-force protection: Redis rate limiting + progressive account lockout (429 + `Retry-After`) — `RateLimitFilter`/`LockoutService` P5.6, `RateLimitPolicyTest` + `RateLimitLockoutTest`
+- [x] **FR-2.3 (P0)** Brute-force protection: Redis rate limiting + progressive account lockout (429 + `Retry-After`) — `RateLimitFilter`/`LockoutService` P5.6, `RateLimitPolicyTest` + `RateLimitLockoutTest`; keyed on the **client's** address behind a proxy since P5.11 (`server.forward-headers-strategy: native` + pinned `HMS_TRUSTED_PROXY`, SEC-1)
 - [x] **FR-2.4 (P0)** Password reset via time-limited, single-use token; response never reveals account existence — `PasswordResetService` P5.7, `PasswordResetTest`
 - [x] Uniform error messages for login/reset/verify — no account enumeration — one 401 for every login failure; uniform 202 for email-shaped requests (D9)
 - [x] **FR-1.3 (P0)** Resend verification: rate limited, never times out or leaves the flow — P5.2 + `email-ip-limit` P5.6; the **async UI re-verification stays at P18.4**
