@@ -31,6 +31,21 @@ public class AuthProperties {
   private Duration accessTokenTtl = Duration.ofMinutes(12);
 
   /**
+   * Lifetime of a refresh token ({@code hms.auth.refresh-token-ttl}; decision D8: 7 days). It
+   * slides on every rotation, so an active session never prompts for a password — the
+   * <i>family</i>, not the individual token, is what bounds how long that can go on.
+   */
+  private Duration refreshTokenTtl = Duration.ofDays(7);
+
+  /**
+   * Absolute age of a refresh-token family ({@code hms.auth.refresh-family-max-age}; decision D8:
+   * 30 days). The sliding {@link #refreshTokenTtl} is capped by this, so a session cannot be kept
+   * alive indefinitely by rotating it: after 30 days from the first token the family stops
+   * producing successors and the user signs in again.
+   */
+  private Duration refreshFamilyMaxAge = Duration.ofDays(30);
+
+  /**
    * Base URL of the web application ({@code hms.auth.frontend-base-url}). Emailed verification
    * links point <i>there</i>, never at the API: the browser opens the link with a GET, and the SPA
    * re-presents the token in a POST body (API.md section 5 hygiene — the API itself never accepts a
@@ -52,6 +67,22 @@ public class AuthProperties {
 
   public void setAccessTokenTtl(Duration accessTokenTtl) {
     this.accessTokenTtl = accessTokenTtl;
+  }
+
+  public Duration getRefreshTokenTtl() {
+    return refreshTokenTtl;
+  }
+
+  public void setRefreshTokenTtl(Duration refreshTokenTtl) {
+    this.refreshTokenTtl = refreshTokenTtl;
+  }
+
+  public Duration getRefreshFamilyMaxAge() {
+    return refreshFamilyMaxAge;
+  }
+
+  public void setRefreshFamilyMaxAge(Duration refreshFamilyMaxAge) {
+    this.refreshFamilyMaxAge = refreshFamilyMaxAge;
   }
 
   public String getFrontendBaseUrl() {
