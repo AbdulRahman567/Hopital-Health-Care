@@ -48,6 +48,7 @@ class RegistrationVerificationTest {
   private static final String REGISTER = "/api/v1/auth/register-hospital";
   private static final String VERIFY = "/api/v1/auth/verify-email";
   private static final String RESEND = "/api/v1/auth/resend-verification";
+  private static final String LOGIN = "/api/v1/auth/login";
 
   /** Any hospital this suite registers is named so its slug is removable afterwards. */
   private static final String NAME_PREFIX = "P52 ";
@@ -187,6 +188,38 @@ class RegistrationVerificationTest {
   }
 
   // -------------------------------------------------------------------------
+  // P5.3 cross-check — closes P5.2's Verify: an unverified hospital cannot sign in
+  // -------------------------------------------------------------------------
+
+  /**
+   * Plan P5.2's split note: "unverified tenant cannot log in" is this task's Verify but needs
+   * {@code POST /auth/login}, which only lands with P5.3, so the assertion is added here once login
+   * exists. It is an additional method on an already-green class — every pre-existing test above is
+   * untouched, which is what decision D11 permits.
+   */
+  @Test
+  void anUnverifiedHospitalCannotSignInUntilItsEmailIsVerified() throws Exception {
+    String email = "p52-unverified-login@example.test";
+    String hospitalName = NAME_PREFIX + "Unverified Login Hospital";
+    register(hospitalName, email, STRONG_PASSWORD);
+    String slug = slugOf(hospitalName);
+
+    JsonNode rejected =
+        objectMapper.readTree(postAndBody(LOGIN, loginBody(slug, email, STRONG_PASSWORD), 401));
+    assertThat(rejected.get("error").get("code").asText()).isEqualTo("UNAUTHENTICATED");
+    assertThat(rejected.get("error").get("message").asText())
+        .isEqualTo(InvalidCredentialsException.MESSAGE);
+    assertThat(rejected.has("data")).as("a rejected login hands back no token").isFalse();
+
+    mockMvc
+        .perform(
+            post(VERIFY).contentType(APPLICATION_JSON).content(tokenBody(tokenFromLastEmail())))
+        .andExpect(status().isOk());
+
+    postAndBody(LOGIN, loginBody(slug, email, STRONG_PASSWORD), 200);
+  }
+
+  // -------------------------------------------------------------------------
   // 5. resend
   // -------------------------------------------------------------------------
 
@@ -316,6 +349,13 @@ class RegistrationVerificationTest {
 
   private static String tokenBody(String token) {
     return "{\"token\":\"" + token + "\"}";
+  }
+
+  private static String loginBody(String slug, String email, String password) {
+    return """
+        {"hospitalSlug":"%s","email":"%s","password":"%s"}
+        """
+        .formatted(slug, email, password);
   }
 
   /** Drops the two envelope fields that legitimately differ between otherwise equal responses. */

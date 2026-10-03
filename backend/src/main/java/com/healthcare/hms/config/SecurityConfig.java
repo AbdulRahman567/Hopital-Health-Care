@@ -24,7 +24,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Deny-by-default security (ENGINEERING_RULES section 8): only the public health probe, the OpenAPI
- * switch and — since Phase 5 — the three anonymous auth endpoints are open; every other request is
+ * switch and — since Phase 5 — the anonymous auth endpoints are open; every other request is
  * rejected with a standard 401/403 JSON envelope. Swagger/OpenAPI paths stay permitted so
  * springdoc's own switch decides visibility — enabled in dev (200), disabled in prod (404, P2.6).
  * Later phases replace {@code denyAll()} endpoint-by-endpoint with declared permissions.
@@ -37,7 +37,9 @@ import org.springframework.security.web.SecurityFilterChain;
  * <p>P5.2 opens {@code register-hospital}, {@code verify-email} and {@code resend-verification} and
  * switches the session to STATELESS with CSRF disabled (decision D5): a stateless bearer API gains
  * nothing from Spring's session-bound token, and leaving it on would 403 the very first POST before
- * P5.5 lands the custom-header guard that actually protects the cookie endpoints.
+ * P5.5 lands the custom-header guard that actually protects the cookie endpoints. P5.3 adds {@code
+ * login} to the same list — it must be reachable with no token, since it is how a token is
+ * obtained.
  */
 @Configuration
 @EnableWebSecurity
@@ -75,14 +77,19 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                     .permitAll()
-                    // P5.2: exactly these three and nothing else. Anonymous by definition — they
+                    // P5.2/P5.3: exactly these four and nothing else. Anonymous by definition —
+                    // they
                     // carry no token, so TenantContext stays empty and they resolve their tenant
-                    // through the D1 bootstrap lookups instead of a bearer claim.
+                    // through the D1 bootstrap lookups instead of a bearer claim. Login answers
+                    // with
+                    // the token P4.2 already knows how to verify; it does not need to be open to be
+                    // reachable, it needs to be open because it is the only way to obtain one.
                     .requestMatchers(
                         HttpMethod.POST,
                         "/api/v1/auth/register-hospital",
                         "/api/v1/auth/verify-email",
-                        "/api/v1/auth/resend-verification")
+                        "/api/v1/auth/resend-verification",
+                        "/api/v1/auth/login")
                     .permitAll()
                     .anyRequest()
                     .denyAll())

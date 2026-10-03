@@ -1,5 +1,6 @@
 package com.healthcare.hms.auth.api;
 
+import com.healthcare.hms.auth.LoginService;
 import com.healthcare.hms.auth.RegistrationService;
 import com.healthcare.hms.auth.VerificationService;
 import com.healthcare.hms.common.api.ApiResponse;
@@ -12,13 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The first HTTP surface of the application (plan P5.2): exactly three anonymous endpoints, every
+ * The first HTTP surface of the application (plans P5.2 and P5.3): four anonymous endpoints, every
  * other route still {@code denyAll()} in {@code SecurityConfig}.
  *
- * <p>All three are email-shaped, so all three answer with D9's uniform 202 except verification
- * itself, which is an explicit success (200) because the caller sees the activation happen. The
- * bodies are constants — nothing in them may vary with whether an account exists (SECURITY section
- * 3).
+ * <p>The three email-shaped routes answer with D9's uniform 202 except verification itself, which
+ * is an explicit success (200) because the caller sees the activation happen. {@code login} is the
+ * one credential-shaped route: 200 with a token, or the single 401 every failure shares.
  *
  * <p>{@code resend-verification} is not in API.md section 11's indicative map; PRD FR-1.3 ("never
  * times out or leaves the flow") requires it, which is recorded in the P5.2 evidence.
@@ -40,11 +40,15 @@ public class AuthController {
 
   private final RegistrationService registrationService;
   private final VerificationService verificationService;
+  private final LoginService loginService;
 
   public AuthController(
-      RegistrationService registrationService, VerificationService verificationService) {
+      RegistrationService registrationService,
+      VerificationService verificationService,
+      LoginService loginService) {
     this.registrationService = registrationService;
     this.verificationService = verificationService;
+    this.loginService = loginService;
   }
 
   @PostMapping("/register-hospital")
@@ -66,6 +70,12 @@ public class AuthController {
       @Valid @RequestBody ResendVerificationRequest request) {
     verificationService.resendVerification(request.email(), request.hospitalSlug());
     return accepted(RESEND_ACCEPTED);
+  }
+
+  @PostMapping("/login")
+  public ResponseEntity<ApiResponse<LoginResponse>> login(
+      @Valid @RequestBody LoginRequest request) {
+    return ResponseEntity.ok(ApiResponse.ok(loginService.login(request)));
   }
 
   private static ResponseEntity<ApiResponse<MessageResponse>> accepted(String message) {
