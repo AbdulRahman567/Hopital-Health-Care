@@ -1,5 +1,6 @@
 package com.healthcare.hms.common.ratelimit;
 
+import com.healthcare.hms.common.logging.Pii;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -84,7 +85,10 @@ public class RateLimiterService {
         return ttl;
       }
     } catch (RuntimeException ex) {
-      log.warn("Could not read the rate-limit TTL for {}; using the window length", key, ex);
+      log.warn(
+          "Could not read the rate-limit TTL for {}; using the window length",
+          Pii.maskKey(key),
+          ex);
     }
     return Math.max(1, window.getSeconds());
   }
@@ -98,7 +102,7 @@ public class RateLimiterService {
    * distinction the caller is deliberately not given.
    */
   private RateLimitedException failClosed(String key, Duration window, String reason) {
-    log.error("Rate limiter unreachable, failing closed (key={}): {}", key, reason);
+    log.error("Rate limiter unreachable, failing closed (key={}): {}", Pii.maskKey(key), reason);
     return new RateLimitedException(Math.max(1, window.getSeconds()));
   }
 }

@@ -24,10 +24,14 @@ public final class RateLimitKeys {
    * The per-address bucket: {@code rl:ip:{ip}}.
    *
    * <p>The value is {@code HttpServletRequest.getRemoteAddr()} &mdash; the peer address the
-   * container observed. {@code X-Forwarded-For} is deliberately <b>not</b> read here (decision D7):
-   * honouring it blindly makes the IP limit spoofable by sending a forged header, so a reverse
-   * proxy is handled by Spring's {@code server.forward-headers-strategy}, which only trusts the
-   * header when the peer is a configured proxy.
+   * container observed, and nothing else. {@code X-Forwarded-For} is deliberately <b>not</b> read
+   * here (decision D7): honouring it blindly would let any client pick its own bucket with a forged
+   * header. A reverse proxy is instead resolved by {@code server.forward-headers-strategy=native},
+   * which makes Tomcat's {@code RemoteIpValve} rewrite {@code getRemoteAddr()} from the header
+   * <i>only</i> when the peer matches {@code server.tomcat.remoteip.internal-proxies} &mdash; the
+   * pinned allowlist in {@code application.yml}, overridable for production with {@code
+   * HMS_TRUSTED_PROXY}. With no proxy (or an untrusted peer) the header is ignored, so a forged one
+   * changes nothing.
    *
    * @param remoteAddress peer address, or {@code null} when the container did not report one
    * @return {@code rl:ip:} followed by a normalised address; {@code rl:ip:unknown} when absent

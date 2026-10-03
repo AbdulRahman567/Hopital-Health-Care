@@ -8,7 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Set;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -36,9 +36,19 @@ public class CustomHeaderCsrfFilter extends OncePerRequestFilter {
   /** The header a client must send, per decision D5. */
   public static final String HEADER = "X-Requested-With";
 
-  /** Exactly the cookie-authenticated routes — no bearer endpoint is asked for this. */
-  private static final Set<String> PROTECTED_PATHS =
-      Set.of("/api/v1/auth/refresh", "/api/v1/auth/logout");
+  /**
+   * Exactly the cookie-authenticated routes — no bearer endpoint is asked for this.
+   *
+   * <p>Matched with {@link PathPatternRequestMatcher} rather than by string equality on {@code
+   * getRequestURI()}, for the same reason as {@link RateLimitFilter}: it is the matcher {@code
+   * SecurityConfig.requestMatchers(...)} uses, so the guard, the authorisation layer and the
+   * handler mapping now agree on which route a request is (SEC-2).
+   */
+  private static final PathPatternRequestMatcher REFRESH =
+      PathPatternRequestMatcher.withDefaults().matcher("/api/v1/auth/refresh");
+
+  private static final PathPatternRequestMatcher LOGOUT =
+      PathPatternRequestMatcher.withDefaults().matcher("/api/v1/auth/logout");
 
   private final ObjectMapper objectMapper;
 
@@ -48,8 +58,7 @@ public class CustomHeaderCsrfFilter extends OncePerRequestFilter {
 
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
-    String path = request.getRequestURI().substring(request.getContextPath().length());
-    return !PROTECTED_PATHS.contains(path);
+    return !REFRESH.matches(request) && !LOGOUT.matches(request);
   }
 
   @Override

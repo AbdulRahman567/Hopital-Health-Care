@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -48,10 +49,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
   /** The only prefix this filter acts on. */
   static final String AUTH_PREFIX = "/api/v1/auth/";
 
-  private static final String LOGIN = AUTH_PREFIX + "login";
-  private static final String REGISTER = AUTH_PREFIX + "register-hospital";
-  private static final String RESEND = AUTH_PREFIX + "resend-verification";
-  private static final String VERIFY = AUTH_PREFIX + "verify-email";
+  private static final PathPatternRequestMatcher LOGIN =
+      PathPatternRequestMatcher.withDefaults().matcher(AUTH_PREFIX + "login");
+  private static final PathPatternRequestMatcher REGISTER =
+      PathPatternRequestMatcher.withDefaults().matcher(AUTH_PREFIX + "register-hospital");
+  private static final PathPatternRequestMatcher RESEND =
+      PathPatternRequestMatcher.withDefaults().matcher(AUTH_PREFIX + "resend-verification");
+  private static final PathPatternRequestMatcher VERIFY =
+      PathPatternRequestMatcher.withDefaults().matcher(AUTH_PREFIX + "verify-email");
 
   private final RateLimiterService rateLimiter;
   private final RateLimitProperties properties;
@@ -85,22 +90,24 @@ public class RateLimitFilter extends OncePerRequestFilter {
     filterChain.doFilter(request, response);
   }
 
-  /** The IP budget this request costs, or {@code null} when the table gives it none. */
+  /**
+   * The IP budget this request costs, or {@code null} when the table gives it none.
+   *
+   * <p>Matched with {@link PathPatternRequestMatcher} — the very type {@code
+   * SecurityConfig.requestMatchers(...)} uses — so this filter, the authorisation layer and Spring
+   * MVC can no longer disagree about which route a request is (SEC-2). Matching a {@code
+   * PathPattern} ignores path parameters and does not treat a trailing separator as a match, which
+   * is exactly what the handler mapping does; comparing {@code getRequestURI()} by string equality
+   * did neither.
+   */
   private Bucket bucketFor(HttpServletRequest request) {
-    String path = request.getRequestURI();
-    String contextPath = request.getContextPath();
-    if (contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
-      path = path.substring(contextPath.length());
+    if (LOGIN.matches(request)) {
+      return new Bucket(properties.getLoginIpLimit(), properties.getLoginIpWindow());
     }
-    if (!path.startsWith(AUTH_PREFIX)) {
-      return null;
+    if (REGISTER.matches(request) || RESEND.matches(request) || VERIFY.matches(request)) {
+      return new Bucket(properties.getEmailIpLimit(), properties.getEmailIpWindow());
     }
-    return switch (path) {
-      case LOGIN -> new Bucket(properties.getLoginIpLimit(), properties.getLoginIpWindow());
-      case REGISTER, RESEND, VERIFY ->
-          new Bucket(properties.getEmailIpLimit(), properties.getEmailIpWindow());
-      default -> null;
-    };
+    return null;
   }
 
   private record Bucket(int limit, Duration window) {}

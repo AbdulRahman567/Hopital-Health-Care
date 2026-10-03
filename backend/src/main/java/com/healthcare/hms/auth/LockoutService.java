@@ -1,6 +1,7 @@
 package com.healthcare.hms.auth;
 
 import com.healthcare.hms.auth.repository.UserRepository;
+import com.healthcare.hms.common.logging.Pii;
 import com.healthcare.hms.common.ratelimit.RateLimitProperties;
 import com.healthcare.hms.common.ratelimit.RateLimitedException;
 import com.healthcare.hms.tenant.TenantKeys;
@@ -120,7 +121,7 @@ public class LockoutService {
       log.info(
           "Locking account after {} failures for {} (tenantId={}, until={})",
           attempts,
-          email,
+          Pii.maskEmail(email),
           tenantId,
           lockedUntil);
     }
