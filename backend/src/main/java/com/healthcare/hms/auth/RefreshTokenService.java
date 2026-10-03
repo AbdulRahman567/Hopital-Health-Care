@@ -186,6 +186,36 @@ public class RefreshTokenService {
     return revoked;
   }
 
+  /**
+   * Revokes every live session an account holds, in one pass (SECURITY section 15).
+   *
+   * <p>Password reset is the caller: keeping a session alive after the password that started it
+   * changed would defeat the point of changing it, because whoever forced the reset keeps working
+   * with the token they already had. Rows that are already revoked keep the reason they were first
+   * given, exactly as in {@link #revokeFamily} &mdash; overwriting {@code REUSED} with {@code
+   * PASSWORD_RESET} would erase the evidence of how that session ended.
+   *
+   * @param userId account whose sessions all end
+   * @param reason recorded on every row this call actually revokes
+   * @return how many rows were still live when the call ran
+   */
+  @Transactional
+  public int revokeAllFamiliesForUser(UUID userId, RefreshTokenRevokedReason reason) {
+    TenantContext.require();
+    Instant now = Instant.now();
+    int revoked = 0;
+    for (RefreshToken token : refreshTokenRepository.findAllByUserId(userId)) {
+      if (token.isRevoked()) {
+        continue;
+      }
+      token.setRevokedAt(now);
+      token.setRevokedReason(reason);
+      refreshTokenRepository.save(token);
+      revoked++;
+    }
+    return revoked;
+  }
+
   private IssuedRefreshToken insert(UUID familyId, User user, String userAgent, Instant expiresAt) {
     String rawToken = TokenValues.newToken();
     RefreshToken successor = new RefreshToken();

@@ -85,7 +85,8 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                     .permitAll()
-                    // P5.2/P5.3/P5.5: exactly these six and nothing else. Anonymous by definition —
+                    // P5.2/P5.3/P5.5/P5.7: exactly these eight and nothing else.
+                    // forgot-password and reset-password are the two halves of FR-2.3: the
                     // they
                     // carry no bearer token, so TenantContext stays empty and they resolve their
                     // tenant
@@ -102,7 +103,9 @@ public class SecurityConfig {
                         "/api/v1/auth/resend-verification",
                         "/api/v1/auth/login",
                         "/api/v1/auth/refresh",
-                        "/api/v1/auth/logout")
+                        "/api/v1/auth/logout",
+                        "/api/v1/auth/forgot-password",
+                        "/api/v1/auth/reset-password")
                     .permitAll()
                     .anyRequest()
                     .denyAll())

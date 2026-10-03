@@ -29,6 +29,16 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
   List<RefreshToken> findAllByFamilyId(UUID familyId);
 
   /**
+   * Every row ever issued to one account, across all of its login sessions.
+   *
+   * <p>Needed by password reset (SECURITY section 15: changing the password revokes every session
+   * started under the old one), where the point is precisely that a user may have more than one
+   * family open and all of them have to go at once. Still tenant-filtered like everything else: the
+   * id can only be reached after the D1 secret leg has bound the tenant.
+   */
+  List<RefreshToken> findAllByUserId(UUID userId);
+
+  /**
    * The first row ever written for a family — the family's age, and therefore the input to decision
    * D8's absolute cap, is measured from here rather than from any single token's lifetime.
    */

@@ -2,6 +2,7 @@ package com.healthcare.hms.auth.api;
 
 import com.healthcare.hms.auth.LoginService;
 import com.healthcare.hms.auth.LoginSession;
+import com.healthcare.hms.auth.PasswordResetService;
 import com.healthcare.hms.auth.RefreshCookieBuilder;
 import com.healthcare.hms.auth.RefreshService;
 import com.healthcare.hms.auth.RefreshSession;
@@ -20,12 +21,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The first HTTP surface of the application (plans P5.2, P5.3 and P5.5): six anonymous endpoints,
- * every other route still {@code denyAll()} in {@code SecurityConfig}.
+ * The first HTTP surface of the application (plans P5.2, P5.3, P5.5 and P5.7): eight anonymous
+ * endpoints, every other route still {@code denyAll()} in {@code SecurityConfig}.
  *
- * <p>The three email-shaped routes answer with D9's uniform 202 except verification itself, which
- * is an explicit success (200) because the caller sees the activation happen. {@code login} is the
- * one credential-shaped route: 200 with a token, or the single 401 every failure shares.
+ * <p>The four email-shaped routes answer with D9's uniform 202 except verification itself, which is
+ * an explicit success (200) because the caller sees the activation happen. {@code login} is the one
+ * credential-shaped route: 200 with a token, or the single 401 every failure shares. {@code
+ * reset-password} is the other 200 &mdash; the caller is holding the token that proves which
+ * account it is, so there is nothing left to hide.
  *
  * <p>P5.5 adds the two routes that are authenticated by cookie instead of bearer token. They are
  * the only handlers here that touch {@code Set-Cookie}: {@code login} and {@code refresh} each hand
@@ -54,10 +57,21 @@ public class AuthController {
   /** What logout tells the caller. It is true even when the family was already dead (FR-2.6). */
   public static final String LOGGED_OUT = "Signed out.";
 
+  /**
+   * What every forgot-password attempt is told, known slug/address or not (D9): the only observable
+   * difference is the email itself.
+   */
+  public static final String FORGOT_ACCEPTED =
+      "If that address belongs to an account, a password reset link has been sent.";
+
+  /** What a successful reset is told. It says nothing about which account changed. */
+  public static final String PASSWORD_UPDATED = "Password updated. Sign in with the new password.";
+
   private final RegistrationService registrationService;
   private final VerificationService verificationService;
   private final LoginService loginService;
   private final RefreshService refreshService;
+  private final PasswordResetService passwordResetService;
   private final RefreshCookieBuilder cookieBuilder;
 
   public AuthController(
@@ -65,11 +79,13 @@ public class AuthController {
       VerificationService verificationService,
       LoginService loginService,
       RefreshService refreshService,
+      PasswordResetService passwordResetService,
       RefreshCookieBuilder cookieBuilder) {
     this.registrationService = registrationService;
     this.verificationService = verificationService;
     this.loginService = loginService;
     this.refreshService = refreshService;
+    this.passwordResetService = passwordResetService;
     this.cookieBuilder = cookieBuilder;
   }
 
@@ -132,6 +148,28 @@ public class AuthController {
     return ResponseEntity.ok()
         .header(HttpHeaders.SET_COOKIE, cookieBuilder.cleared().toString())
         .body(ApiResponse.ok(new MessageResponse(LOGGED_OUT)));
+  }
+
+  /**
+   * Requests a reset link &mdash; always the same 202 (decision D9), because a different answer for
+   * an unknown address would turn an anonymous endpoint into an account-existence oracle.
+   */
+  @PostMapping("/forgot-password")
+  public ResponseEntity<ApiResponse<MessageResponse>> forgotPassword(
+      @Valid @RequestBody ForgotPasswordRequest request) {
+    passwordResetService.forgotPassword(request.email(), request.hospitalSlug());
+    return accepted(FORGOT_ACCEPTED);
+  }
+
+  /**
+   * Consumes a reset link and changes the password. The one flow whose success is reported, since
+   * the caller is holding the token that proves which account it is.
+   */
+  @PostMapping("/reset-password")
+  public ResponseEntity<ApiResponse<MessageResponse>> resetPassword(
+      @Valid @RequestBody ResetPasswordRequest request) {
+    passwordResetService.resetPassword(request.token(), request.newPassword());
+    return ResponseEntity.ok(ApiResponse.ok(new MessageResponse(PASSWORD_UPDATED)));
   }
 
   private static ResponseEntity<ApiResponse<MessageResponse>> accepted(String message) {

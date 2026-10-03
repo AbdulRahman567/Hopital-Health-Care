@@ -46,6 +46,17 @@ public class AuthProperties {
   private Duration refreshFamilyMaxAge = Duration.ofDays(30);
 
   /**
+   * Lifetime of a password-reset token ({@code hms.auth.password-reset-token-ttl}; decision D8: 30
+   * minutes).
+   *
+   * <p>Short on purpose: the link is a bearer credential that changes the one secret protecting the
+   * account, so it has to be opened now rather than tomorrow. Half an hour survives a normal "I
+   * clicked forgot password on my laptop, let me find the email" detour without leaving a usable
+   * key lying in a mailbox for a day.
+   */
+  private Duration passwordResetTokenTtl = Duration.ofMinutes(30);
+
+  /**
    * Base URL of the web application ({@code hms.auth.frontend-base-url}). Emailed verification
    * links point <i>there</i>, never at the API: the browser opens the link with a GET, and the SPA
    * re-presents the token in a POST body (API.md section 5 hygiene — the API itself never accepts a
@@ -83,6 +94,14 @@ public class AuthProperties {
 
   public void setRefreshFamilyMaxAge(Duration refreshFamilyMaxAge) {
     this.refreshFamilyMaxAge = refreshFamilyMaxAge;
+  }
+
+  public Duration getPasswordResetTokenTtl() {
+    return passwordResetTokenTtl;
+  }
+
+  public void setPasswordResetTokenTtl(Duration passwordResetTokenTtl) {
+    this.passwordResetTokenTtl = passwordResetTokenTtl;
   }
 
   public String getFrontendBaseUrl() {
