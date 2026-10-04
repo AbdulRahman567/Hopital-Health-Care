@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 /**
  * Request-scoped tenant holder (TDD section 6.2.2): the tenant resolved from the authenticated
@@ -110,5 +111,30 @@ public final class TenantContext {
         HOLDER.set(previous);
       }
     }
+  }
+
+  /**
+   * Runs {@code work} bound to {@code tenantId} and returns its result, then restores whatever was
+   * bound before — the same discipline as {@link #run(UUID, Runnable)}.
+   *
+   * <p>Phase 5's bootstrap legs need a return value (the row just written, the token just issued),
+   * which a {@link Runnable} cannot carry without an array holder at every call site.
+   *
+   * @param tenantId tenant to bind for the duration of {@code work}
+   * @param work body to execute
+   * @param <T> result type
+   * @return whatever {@code work} returned
+   */
+  public static <T> T call(UUID tenantId, Supplier<T> work) {
+    Objects.requireNonNull(work, "work must not be null");
+    Object[] box = new Object[1];
+    run(
+        tenantId,
+        () -> {
+          box[0] = work.get();
+        });
+    @SuppressWarnings("unchecked")
+    T typed = (T) box[0];
+    return typed;
   }
 }

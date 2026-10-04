@@ -19,10 +19,17 @@ import org.junit.jupiter.api.Test;
 class TenantIdNotNullIT {
 
   /**
-   * Every tenant-scoped table created by V1-V3 (platform tables `tenants`/`permissions` excluded).
+   * Every tenant-scoped table created by V1-V4 (platform tables `tenants`/`permissions` excluded).
    */
   private static final List<String> TENANT_TABLES =
-      List.of("users", "roles", "role_permissions", "user_roles", "audit_logs");
+      List.of(
+          "users",
+          "roles",
+          "role_permissions",
+          "user_roles",
+          "audit_logs",
+          "refresh_tokens",
+          "verification_tokens");
 
   private static MigrationTestSupport db;
   private static UUID tenant;

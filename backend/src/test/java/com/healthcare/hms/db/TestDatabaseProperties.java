@@ -27,6 +27,14 @@ public final class TestDatabaseProperties {
     properties.put("spring.datasource.url", TestDatabase.jdbcUrl());
     properties.put("spring.datasource.username", TestDatabase.username());
     properties.put("spring.datasource.password", TestDatabase.password());
+    // One JVM-scoped MySQL for every context in the suite, and MySQL allows 151 connections.
+    // Hikari would otherwise give each context a pool of ten and keep those connections open for
+    // as long as the context lives, so roughly twenty contexts are already at the ceiling and the
+    // next test class to ask for a pool gets "Too many connections" - which surfaces as a random
+    // failure in whatever class happens to start next, not in the class that filled the pool.
+    // Tests are single-threaded and never hold more than a connection or two, so four is room to
+    // spare; the cost of the cap is nil and the suite can keep growing.
+    properties.put("spring.datasource.hikari.maximum-pool-size", 4);
     environment
         .getPropertySources()
         .addFirst(new MapPropertySource(TestDatabase.PROPERTY_SOURCE_NAME, properties));

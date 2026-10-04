@@ -53,6 +53,26 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
+        <!--
+          P5.2 (decision D4, CONF-6 "SMTP abstraction + local dev transport"): transports for the
+          notification EmailSender port. Nothing is sent unless spring.mail.host is set — the
+          SmtpEmailSender bean is conditional on it, and the dev default is LoggingEmailSender.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <!--
+          P5.6 (decision D7): Redis for rate limiting and progressive lockout - SECURITY section 12's
+          auth-endpoint limits and the fail-closed path that rejects a request when the limiter is
+          unreachable. BOM-managed Lettuce; no version is written here. Every test context gets a
+          JVM-scoped redis:7.4-alpine through spring.factories, because the starter also puts a
+          RedisHealthIndicator on the classpath and /actuator/health would otherwise report DOWN.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>

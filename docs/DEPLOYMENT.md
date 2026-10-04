@@ -49,7 +49,8 @@ Later: autoscaling group, blue/green or rolling deploys, read replica for report
 - [ ] Strong JWT secret/key; unique per environment
 - [ ] DB credentials least-privilege (`app_rw`)
 - [ ] CORS allow-list = production frontend origin only
-- [ ] Cookies `Secure`, `HttpOnly`, correct `SameSite`/domain
+- [ ] `HMS_TRUSTED_PROXY` = the reverse proxy's address as a whole-string regex (`Matcher.matches`), so `X-Forwarded-For` is honoured from that hop only — per-IP rate limits otherwise key on the proxy and one bucket covers every visitor (SEC-1, P5.11)
+- [ ] Cookies `Secure`, `HttpOnly`, correct `SameSite`/domain — and the SPA and the API are on **one registrable domain**, because `SameSite=Lax` is not sent cross-site and would silently kill the refresh leg (D6, ROADMAP P27.1)
 - [ ] S3 bucket private, SSE enabled, IAM role scoped to `tenants/*` prefix
 - [ ] Email provider configured; SPF/DKIM/DMARC set
 - [ ] Actuator/Prometheus internal only; Swagger disabled/protected

@@ -26,10 +26,10 @@ import org.springframework.core.env.Environment;
  */
 class MigrationIT {
 
-  /** V1 + V2 + V3 — bump when a migration is added and keep the version assertions in sync. */
-  private static final int MIGRATION_COUNT = 3;
+  /** V1 + V2 + V3 + V4 — bump when a migration is added and keep the version assertions in sync. */
+  private static final int MIGRATION_COUNT = 4;
 
-  private static final String EXPECTED_CURRENT_VERSION = "3";
+  private static final String EXPECTED_CURRENT_VERSION = "4";
 
   private MigrationTestSupport db;
 
@@ -57,7 +57,7 @@ class MigrationIT {
     assertThat(result.migrationsExecuted).isEqualTo(MIGRATION_COUNT);
     assertThat(appliedVersions())
         .as("migrations apply strictly in file order")
-        .containsExactly("1", "2", "3");
+        .containsExactly("1", "2", "3", "4");
     assertThat(db.currentVersion()).isEqualTo(EXPECTED_CURRENT_VERSION);
     assertThat(db.flyway().info().pending()).isEmpty();
   }

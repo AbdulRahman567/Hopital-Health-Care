@@ -29,6 +29,20 @@ spring:
 server:
   port: 8080
 
+  # SEC-1 (P5.11) - infra/nginx sends X-Real-IP/X-Forwarded-For, so without this every client
+  # of a proxied deployment would share one rl:ip:* bucket and 20 logins would deny the whole
+  # site. 'native' (Tomcat RemoteIpValve) is required: 'framework' rewrites only scheme/host/
+  # port and leaves getRemoteAddr() - which is what RateLimitFilter keys on - pointing at the
+  # proxy. The hop is pinned to this allowlist, so a header arriving from any other peer is
+  # ignored and cannot be used to pick a bucket. Tomcat matches the pattern against the whole
+  # address (Matcher.matches), hence the anchored form; an empty value trusts nobody, i.e. it
+  # fails back to today's shared-bucket behaviour rather than opening a hole. Re-pin it to the
+  # real proxy address for production with HMS_TRUSTED_PROXY (DEPLOYMENT section 6, P27).
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      internal-proxies: '${HMS_TRUSTED_PROXY:^172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}$}'
+
 management:
   endpoints:
     web:
