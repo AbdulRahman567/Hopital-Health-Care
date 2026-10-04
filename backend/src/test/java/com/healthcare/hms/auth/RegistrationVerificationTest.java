@@ -82,6 +82,20 @@ class RegistrationVerificationTest {
     jdbcTemplate.update(
         "DELETE FROM refresh_tokens"
             + " WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'p52-%')");
+    // P6.2 / decision D4: register-hospital now provisions the tenant's six system bundles and
+    // enrols the administrator in ADMIN inside this registration's transaction. V2 declares no
+    // ON DELETE CASCADE, so without the three statements below the users delete would trip
+    // fk_user_roles_users and the tenants delete would trip fk_roles_tenants. This is the one
+    // place Phase 6 touches a pre-existing test class, and only its clean-up: the assertions of
+    // every test above are untouched. Recorded as a D6 deviation in the phase evidence.
+    jdbcTemplate.update(
+        "DELETE FROM user_roles"
+            + " WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'p52-%')");
+    jdbcTemplate.update(
+        "DELETE FROM role_permissions"
+            + " WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'p52-%')");
+    jdbcTemplate.update(
+        "DELETE FROM roles WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'p52-%')");
     jdbcTemplate.update(
         "DELETE FROM users WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE 'p52-%')");
     jdbcTemplate.update("DELETE FROM tenants WHERE slug LIKE 'p52-%'");

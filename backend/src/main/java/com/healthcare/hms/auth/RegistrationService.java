@@ -3,6 +3,7 @@ package com.healthcare.hms.auth;
 import com.healthcare.hms.auth.api.RegisterHospitalRequest;
 import com.healthcare.hms.auth.repository.UserRepository;
 import com.healthcare.hms.auth.repository.VerificationTokenRepository;
+import com.healthcare.hms.authz.SystemRoleProvisioner;
 import com.healthcare.hms.common.api.FieldViolation;
 import com.healthcare.hms.common.exception.ConflictException;
 import com.healthcare.hms.common.exception.ErrorCodes;
@@ -68,6 +69,7 @@ public class RegistrationService {
   private final JdbcTemplate jdbcTemplate;
   private final RateLimiterService rateLimiter;
   private final RateLimitProperties rateLimitProperties;
+  private final SystemRoleProvisioner systemRoleProvisioner;
 
   public RegistrationService(
       SlugGenerator slugGenerator,
@@ -81,7 +83,8 @@ public class RegistrationService {
       TransactionTemplate transactionTemplate,
       JdbcTemplate jdbcTemplate,
       RateLimiterService rateLimiter,
-      RateLimitProperties rateLimitProperties) {
+      RateLimitProperties rateLimitProperties,
+      SystemRoleProvisioner systemRoleProvisioner) {
     this.slugGenerator = slugGenerator;
     this.tenantRepository = tenantRepository;
     this.passwordPolicy = passwordPolicy;
@@ -94,6 +97,7 @@ public class RegistrationService {
     this.jdbcTemplate = jdbcTemplate;
     this.rateLimiter = rateLimiter;
     this.rateLimitProperties = rateLimitProperties;
+    this.systemRoleProvisioner = systemRoleProvisioner;
   }
 
   /**
@@ -139,6 +143,11 @@ public class RegistrationService {
                     jdbcTemplate.update(
                         INSERT_TENANT, uuidBytes(newTenantId), request.hospitalName(), slug);
                     User admin = createAdmin(request);
+                    // P6.2 / decision D4: the tenant's six system bundles and the administrator's
+                    // ADMIN enrolment go in the same transaction as the account that needs them —
+                    // auth may depend on authz (ARCHITECTURE section 3), and a tenant left without
+                    // roles would answer 403 to its own administrator on every authorized route.
+                    systemRoleProvisioner.provision(newTenantId, admin.getId());
                     verificationTokenRepository.save(verificationToken(admin.getId(), tokenHash));
                   }));
     } catch (DuplicateKeyException ex) {

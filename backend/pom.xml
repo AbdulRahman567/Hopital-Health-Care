@@ -131,6 +131,23 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+          P6.3 (decision D9): ArchUnit, test scope, version pinned.
+
+          TDD section 19 makes the architecture rules executable rather than a paragraph in a
+          document, and SECURITY section 14 requires the deny-by-default endpoint rule to fail the
+          build instead of relying on review. EndpointPermissionArchUnitTest is what turns
+          "every controller method declares a permission" into a regression property: a new
+          controller added by Phase 7+ cannot land an unannotated handler, a controller that
+          reaches into a repository cannot land at all, and the module map of ARCHITECTURE section 3
+          is checked on the same run.
+        -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>1.3.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -1,9 +1,16 @@
 package com.healthcare.hms.auth;
 
 import com.healthcare.hms.auth.repository.UserRepository;
+import com.healthcare.hms.authz.Role;
+import com.healthcare.hms.authz.SystemRoleProvisioner;
+import com.healthcare.hms.authz.UserRole;
+import com.healthcare.hms.authz.UserRoleKey;
+import com.healthcare.hms.authz.repository.RoleRepository;
+import com.healthcare.hms.authz.repository.UserRoleRepository;
 import com.healthcare.hms.tenant.TenantContext;
 import com.healthcare.hms.tenant.TenantStatus;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,12 +38,23 @@ public class AuthFixtures {
   private final PasswordEncoder passwordEncoder;
   private final UserRepository userRepository;
   private final JdbcTemplate jdbcTemplate;
+  private final SystemRoleProvisioner systemRoleProvisioner;
+  private final RoleRepository roleRepository;
+  private final UserRoleRepository userRoleRepository;
 
   public AuthFixtures(
-      PasswordEncoder passwordEncoder, UserRepository userRepository, JdbcTemplate jdbcTemplate) {
+      PasswordEncoder passwordEncoder,
+      UserRepository userRepository,
+      JdbcTemplate jdbcTemplate,
+      SystemRoleProvisioner systemRoleProvisioner,
+      RoleRepository roleRepository,
+      UserRoleRepository userRoleRepository) {
     this.passwordEncoder = passwordEncoder;
     this.userRepository = userRepository;
     this.jdbcTemplate = jdbcTemplate;
+    this.systemRoleProvisioner = systemRoleProvisioner;
+    this.roleRepository = roleRepository;
+    this.userRoleRepository = userRoleRepository;
   }
 
   /** A stored hash for {@code rawPassword}, produced exactly as registration produces one. */
@@ -85,11 +103,85 @@ public class AuthFixtures {
   }
 
   /**
+   * Provisions a tenant's six system bundles and enrols {@code adminUserId} in {@code ADMIN}
+   * (decision D4) — the same call registration makes, available to suites whose tenant was inserted
+   * directly rather than registered over HTTP. Idempotent, so it may be called on every test.
+   *
+   * <p>Additive in Phase 6: no method above changed its signature or what it returns (D10).
+   */
+  public void provisionRoles(UUID tenantId, UUID adminUserId) {
+    systemRoleProvisioner.provision(tenantId, adminUserId);
+  }
+
+  /**
+   * The six bundles without enrolling anybody — for suites that need a tenant's catalog to exist
+   * but name the enrolments themselves. See {@link #createUserWithRoles} for why this is not the
+   * same call as {@link #provisionRoles}.
+   */
+  public void provisionBundles(UUID tenantId) {
+    systemRoleProvisioner.provisionBundles(tenantId);
+  }
+
+  /**
+   * An account holding exactly {@code roleNames}: bundles provisioned first (so every role named
+   * below exists), then the enrolments written on top.
+   *
+   * <p>Deliberately <b>not</b> routed through {@link #provisionRoles}: that overload enrols its
+   * argument in {@code ADMIN}, which is registration's meaning of "provision". Routing a fixture
+   * account through it would hand every one of them the administrator's full 51-code grant and make
+   * the authority assertions in Phase 6's matrix test pass for the wrong reason.
+   *
+   * <p>Phase 6's matrix tests need a signed-in caller whose authority is spelled out at the fixture
+   * rather than inferred from {@code ADMIN}; building it here keeps those tests free of repository
+   * wiring of their own.
+   */
+  public User createUserWithRoles(
+      UUID tenantId,
+      String email,
+      String rawPassword,
+      UserStatus status,
+      boolean mfaEnabled,
+      Collection<String> roleNames) {
+    User user = createUser(tenantId, email, rawPassword, status, mfaEnabled);
+    systemRoleProvisioner.provisionBundles(tenantId);
+    grantRoles(tenantId, user.getId(), roleNames);
+    return user;
+  }
+
+  /** Grants named roles to an existing account; a role it already holds is left alone. */
+  public void grantRoles(UUID tenantId, UUID userId, Collection<String> roleNames) {
+    TenantContext.run(
+        tenantId,
+        () ->
+            roleNames.forEach(
+                name -> {
+                  Role role =
+                      roleRepository
+                          .findByName(name)
+                          .orElseThrow(
+                              () ->
+                                  new IllegalArgumentException(
+                                      "No role named \"" + name + "\" in tenant " + tenantId));
+                  if (userRoleRepository.existsById(
+                      new UserRoleKey(tenantId, userId, role.getId()))) {
+                    return;
+                  }
+                  userRoleRepository.save(UserRole.grant(tenantId, userId, role.getId()));
+                }));
+  }
+
+  /**
    * Removes every tenant whose slug starts with {@code prefix}, together with the accounts and
    * tokens hanging off it.
    *
    * <p>The database is JVM-scoped and shared with every other suite (TESTING section 4), so a
    * fixture that outlived its test would eventually collide with a later one.
+   *
+   * <p>Phase 6 adds the three role tables in dependency order before the {@code users} delete. V2
+   * declares no {@code ON DELETE CASCADE} on {@code user_roles} / {@code role_permissions} / {@code
+   * roles}, so any tenant provisioned by decision D4 would otherwise make this statement fail with
+   * a foreign-key error rather than clean up. Purely additive: the deletes below ran
+   * unconditionally in Phase 5 and still do.
    */
   public void deleteTenantsStartingWith(String prefix) {
     String like = prefix + "%";
@@ -100,6 +192,14 @@ public class AuthFixtures {
     jdbcTemplate.update(
         "DELETE FROM refresh_tokens WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE ?)",
         like);
+    jdbcTemplate.update(
+        "DELETE FROM user_roles WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE ?)",
+        like);
+    jdbcTemplate.update(
+        "DELETE FROM role_permissions WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE ?)",
+        like);
+    jdbcTemplate.update(
+        "DELETE FROM roles WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE ?)", like);
     jdbcTemplate.update(
         "DELETE FROM users WHERE tenant_id IN (SELECT id FROM tenants WHERE slug LIKE ?)", like);
     jdbcTemplate.update("DELETE FROM tenants WHERE slug LIKE ?", like);

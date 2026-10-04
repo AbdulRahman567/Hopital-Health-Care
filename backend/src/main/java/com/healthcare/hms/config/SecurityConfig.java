@@ -1,6 +1,7 @@
 package com.healthcare.hms.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.healthcare.hms.authz.PermissionResolver;
 import com.healthcare.hms.common.api.ApiErrorWriter;
 import com.healthcare.hms.common.exception.ErrorCodes;
 import com.healthcare.hms.common.ratelimit.RateLimitProperties;
@@ -30,7 +31,9 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
  * switch and — since Phase 5 — the anonymous auth endpoints are open; every other request is
  * rejected with a standard 401/403 JSON envelope. Swagger/OpenAPI paths stay permitted so
  * springdoc's own switch decides visibility — enabled in dev (200), disabled in prod (404, P2.6).
- * Later phases replace {@code denyAll()} endpoint-by-endpoint with declared permissions.
+ * Since P6.3 the replacement of {@code denyAll()} is endpoint-by-endpoint and declared: a route
+ * becomes {@code .authenticated()} only when its handlers carry {@code @RequirePermission}, and
+ * everything else keeps the default.
  *
  * <p>P4.2 adds bearer-token verification (decision D1-A): an HS256 {@link JwtDecoder} built from
  * the existing {@code hms.security.jwt-secret}, so {@link TenantContextFilter} can read a verified
@@ -43,6 +46,24 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
  * P5.5 lands the custom-header guard that actually protects the cookie endpoints. P5.3 adds {@code
  * login} to the same list — it must be reachable with no token, since it is how a token is
  * obtained.
+ *
+ * <p>P6.2 adds {@code /api/v1/roles} and {@code /api/v1/permissions} as {@code .authenticated()}
+ * routes: the first surface reachable by a signed-in caller at all. They are decided here only to
+ * that depth; which permission each route needs is enforced on the handler by
+ * {@code @RequirePermission} (P6.3), and {@code anyRequest().denyAll()} stays the answer for every
+ * route no phase has declared.
+ *
+ * <p>P6.3 adds {@link PermissionAuthoritiesFilter} after {@link TenantContextFilter}: this chain
+ * now answers <i>whether the route is reachable at all</i> and the filter answers <i>which
+ * authorities the caller carries into it</i>. Both halves are needed because the permission itself
+ * is read from the database on every request (decision D1) — a token can name the tenant, but it
+ * can never carry the privilege map that outlives the row it was copied from.
+ *
+ * <p>P6.4 adds {@code /api/v1/staff} to the same endpoint-by-endpoint replacement, and is the first
+ * route where three separate decisions are visible at once: {@code .authenticated()} here says a
+ * signed-in caller may reach it, {@code @RequirePermission("STAFF_VIEW")} says which code is
+ * needed, and {@code UserSelfOrStaffPolicy} inside {@code StaffService} says which rows that caller
+ * may open. Nothing about the third is written here — this class decides routes, not rows.
  */
 @Configuration
 @EnableWebSecurity
@@ -69,7 +90,8 @@ public class SecurityConfig {
       ObjectMapper objectMapper,
       JwtDecoder jwtDecoder,
       RateLimiterService rateLimiter,
-      RateLimitProperties rateLimitProperties)
+      RateLimitProperties rateLimitProperties,
+      PermissionResolver permissionResolver)
       throws Exception {
     // D5: Spring's CSRF token is session-bound, and this app is stateless — it would reject every
     // POST from the first byte Phase 5 sends. The guard that does apply (a custom header on the
@@ -106,6 +128,24 @@ public class SecurityConfig {
                         "/api/v1/auth/forgot-password",
                         "/api/v1/auth/reset-password")
                     .permitAll()
+                    // P6.2 (decision D3): the first *authorized* surface. This is the
+                    // endpoint-by-endpoint replacement of denyAll() the javadoc above promises,
+                    // and it stops at exactly this depth — "somebody is signed in". Which
+                    // permission each route needs is decided by @RequirePermission on the handler
+                    // (P6.3), so no business rule migrates into configuration. Everything not
+                    // named here keeps denyAll(), including any route a later phase forgets to
+                    // declare.
+                    .requestMatchers("/api/v1/roles", "/api/v1/roles/**")
+                    .authenticated()
+                    .requestMatchers("/api/v1/permissions")
+                    .authenticated()
+                    // P6.4: the staff read surface, declared to exactly the same depth — the
+                    // routes exist for a signed-in caller and @RequirePermission on the handler
+                    // says which code is needed. The row-level rule (own account, or a colleague's
+                    // with STAFF_VIEW) is enforced in StaffService, not here: configuration would
+                    // have to know what a "colleague" is, and it must not.
+                    .requestMatchers("/api/v1/staff", "/api/v1/staff/**")
+                    .authenticated()
                     .anyRequest()
                     .denyAll())
         .exceptionHandling(
@@ -160,6 +200,14 @@ public class SecurityConfig {
         // also register it in the servlet container at /* and run it a second time.
         .addFilterAfter(
             new TenantContextFilter(objectMapper), BearerTokenAuthenticationFilter.class)
+        // P6.3 (decision D1): the authorities stage, chained immediately after tenant resolution —
+        // the two lookups it makes are tenant-scoped, so it cannot run earlier, and everything that
+        // answers "may this caller do this" reads what it wrote, so it cannot run later. Same
+        // inline
+        // construction as its neighbours, for the same reason (a Filter bean would also be
+        // registered by Boot at /* and run twice).
+        .addFilterAfter(
+            new PermissionAuthoritiesFilter(permissionResolver), TenantContextFilter.class)
         // P5.5 (decision D5). Positioned immediately before authorization, which is TDD section
         // 4.1's slot for it: rate limit -> authentication -> tenant resolution -> csrf guard ->
         // authorization. Same inline construction, same reason as the filter above.

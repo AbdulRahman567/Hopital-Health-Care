@@ -23,9 +23,13 @@ import org.springframework.stereotype.Service;
  * TenantContextFilter} reads back (plan D10: "must equal {@code TENANT_CLAIM}"), so a token issued
  * here is what lets the P4.2 pipeline resolve a tenant with no change to the decoder.
  *
- * <p>{@code roles} is an empty array until Phase 6 assigns any: the claim is declared now so the
- * shape is stable and a client can be written against it, and discovering a missing claim later
- * would be a silent contract change.
+ * <p>{@code roles} carries the role <i>names</i> the account held when the token was minted
+ * (decision D2, P6.3): display data for a sidebar and a header, alphabetically ordered so two
+ * tokens issued for the same account compare equal. It is deliberately not the permission map —
+ * permissions are read from the database on every request by {@code PermissionAuthoritiesFilter},
+ * so this claim can go stale the instant a role is edited and nothing in the authorization path
+ * ever reads it. A token naming a role is a hint about who the caller is; it is never a statement
+ * about what they may do.
  *
  * <p>HS256 is named explicitly in the JWS header rather than left to the encoder's default, which
  * is RS256 — an RSA default would ask the {@code oct} key for a match it can never satisfy.
@@ -52,9 +56,12 @@ public class JwtTokenService {
    *
    * @param user the authenticated account; only its id reaches the token
    * @param tenantId tenant the token is scoped to
+   * @param roleNames the role names this account holds in {@code tenantId}, already resolved by the
+   *     caller so this class stays free of repository and tenant knowledge (ARCHITECTURE section 3:
+   *     a module's public types do not reach into another module's persistence)
    * @return the compact JWT plus the response envelope fields
    */
-  public LoginResponse issue(User user, UUID tenantId) {
+  public LoginResponse issue(User user, UUID tenantId, List<String> roleNames) {
     Duration ttl = properties.getAccessTokenTtl();
     Instant issuedAt = Instant.now();
 
@@ -65,7 +72,7 @@ public class JwtTokenService {
             .expiresAt(issuedAt.plus(ttl))
             .id(UUID.randomUUID().toString())
             .claim(TenantContextFilter.TENANT_CLAIM, tenantId.toString())
-            .claim(ROLES_CLAIM, List.of())
+            .claim(ROLES_CLAIM, List.copyOf(roleNames))
             .build();
 
     Jwt token =

@@ -5,6 +5,7 @@ import com.healthcare.hms.auth.api.RefreshResponse;
 import com.healthcare.hms.auth.api.SessionProfile;
 import com.healthcare.hms.auth.repository.RefreshTokenRepository;
 import com.healthcare.hms.auth.repository.UserRepository;
+import com.healthcare.hms.authz.PermissionResolver;
 import com.healthcare.hms.tenant.Tenant;
 import com.healthcare.hms.tenant.TenantContext;
 import com.healthcare.hms.tenant.TenantRepository;
@@ -43,6 +44,7 @@ public class RefreshService {
   private final UserRepository userRepository;
   private final TenantRepository tenantRepository;
   private final JwtTokenService jwtTokenService;
+  private final PermissionResolver permissionResolver;
 
   public RefreshService(
       TokenBootstrapLookup tokenBootstrapLookup,
@@ -50,13 +52,15 @@ public class RefreshService {
       RefreshTokenService refreshTokenService,
       UserRepository userRepository,
       TenantRepository tenantRepository,
-      JwtTokenService jwtTokenService) {
+      JwtTokenService jwtTokenService,
+      PermissionResolver permissionResolver) {
     this.tokenBootstrapLookup = tokenBootstrapLookup;
     this.refreshTokenRepository = refreshTokenRepository;
     this.refreshTokenService = refreshTokenService;
     this.userRepository = userRepository;
     this.tenantRepository = tenantRepository;
     this.jwtTokenService = jwtTokenService;
+    this.permissionResolver = permissionResolver;
   }
 
   /**
@@ -84,13 +88,14 @@ public class RefreshService {
               user.getId(),
               tenantId,
               rotated.familyId());
-          LoginResponse tokens = jwtTokenService.issue(user, tenantId);
+          List<String> roleNames = permissionResolver.roleNames(tenantId, user.getId());
+          LoginResponse tokens = jwtTokenService.issue(user, tenantId, roleNames);
           RefreshResponse body =
               new RefreshResponse(
                   tokens.accessToken(),
                   tokens.tokenType(),
                   tokens.expiresIn(),
-                  profile(user, tenantId));
+                  profile(user, tenantId, roleNames));
           return new RefreshSession(body, rotated);
         });
   }
@@ -141,14 +146,14 @@ public class RefreshService {
         .orElseThrow(InvalidRefreshTokenException::new);
   }
 
-  private SessionProfile profile(User user, UUID tenantId) {
+  private SessionProfile profile(User user, UUID tenantId, List<String> roleNames) {
     String tenantName = tenantRepository.findById(tenantId).map(Tenant::getName).orElse(null);
     return new SessionProfile(
         user.getId().toString(),
         user.getEmail(),
         user.getFirstName(),
         user.getLastName(),
-        List.of(),
+        List.copyOf(roleNames),
         tenantName);
   }
 }

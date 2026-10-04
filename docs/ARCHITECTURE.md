@@ -32,12 +32,12 @@ Users (Admin, Doctor, Nurse, Reception, Lab, Billing)
 | Module | Responsibility | May depend on |
 |---|---|---|
 | `common` | Response envelope, exceptions, pagination, base entities | – |
-| `config` | Security, Redis, storage, OpenAPI, async | common |
+| `config` | Security, Redis, storage, OpenAPI, async | common † |
 | `tenant` | Tenant context, resolution filter | common |
 | `auth` | Login, tokens, reset, verification | tenant, authz, audit, notification |
 | `authz` | Permissions, roles, resource & field policies | tenant, common |
 | `organization` | Hospital settings, departments | tenant, authz, audit |
-| `staff` | Staff, invitations | organization, auth |
+| `staff` | Staff, invitations | organization, auth, authz |
 | `patient` | Patients, allergies, assignments | tenant, authz, audit |
 | `appointment` | Booking, queue | patient, staff |
 | `clinical` | Visits, vitals, notes, diagnoses, orders | patient, appointment |
@@ -55,6 +55,7 @@ Users (Admin, Doctor, Nurse, Reception, Lab, Billing)
 2. A module talks to another module only through its **public service interface**, never its repositories or entities.
 3. `common` depends on nothing; feature modules never depend on `config` internals.
 4. Clinical modules never depend on `billing`; billing reads through a defined interface.
+5. **† Two recorded one-way edges out of `config`** (both required by the security chain, both pre-recorded in `EndpointPermissionArchUnitTest`'s `ALLOWED_DEPENDENCIES` so the rule documents reality and fails only on a *third*): `config → tenant` — `SecurityConfig` registers `TenantContextFilter` (ROADMAP deviation 7 / ISO-8); `config → authz` — `SecurityConfig` registers the `PermissionAuthoritiesFilter` and `SecurityConfig`'s `/api/v1/roles/**` matchers make `config` the composition point for authorization (decision D3, recorded at P6.8 / ISO-8). Neither edge is a cycle, and a new `config → …` import fails the build until it is declared here and in the rule.
 
 ## 4. Request Lifecycle
 

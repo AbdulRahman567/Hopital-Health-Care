@@ -21,9 +21,9 @@
 | B | Repository & Infrastructure | 1 | – | ☑ Done |
 | C | Backend Foundation | 2 | P0 | ☑ Done |
 | D | Database Foundation | 3 | P0 | ☑ Done |
-| E | Multi-Tenancy Isolation | 4 | P0 | ☑ Done (ADR-006 HTTP 404 → P6.7) |
-| F | Authentication & Session | 5 | P0 | ☑ Done (2026-10-04, `phase/05-authentication`, 236 tests; P5.11 fixed SEC-1/SEC-2/SEC-3) |
-| G | Authorization / RBAC | 6 | P0 | ☐ Not started |
+| E | Multi-Tenancy Isolation | 4 | P0 | ☑ Done (ADR-006 HTTP 404 proven at P6.7) |
+| F | Authentication & Session | 5 | P0 | ☑ Done (2026-10-04, merged `ce01e76`, 236 tests; P5.11 fixed SEC-1/SEC-2/SEC-3) |
+| G | Authorization / RBAC | 6 | P0 | ☑ Done (2026-10-04, `phase/06-authorization`, 294 tests; review findings SEC-6…SEC-10 recorded in PROJECT_CONTEXT §11) |
 | H | Frontend Foundation | 7 | P0 | ☐ Not started |
 | I | Hospital & Organization Mgmt | 8 | P0/P1 | ☐ Not started |
 | J | Staff & Doctor Management | 9 | P0 | ☐ Not started |
@@ -49,7 +49,7 @@
 | AD | Production Readiness | 29 | P0 (NFR) | ☐ Not started |
 | AE | Future AI / Advanced | 30 | P2 | ☐ Not started |
 
-**Overall: 3 / 31 groups done.**
+**Overall: 7 / 31 groups done.**
 
 ---
 
@@ -104,7 +104,7 @@
 - [x] Cross-tenant repository isolation suite (Tenant A vs Tenant B) — 0 failures
 - [x] Tenant-prefixed Redis keys `t:{tenantId}:` and storage keys `tenants/{tenantId}/`
 - [x] Tenant propagation helper for async job payloads
-- [ ] Foreign-tenant resources return **404**, never 403 (ADR-006) — repository primitive proven in P4.4/P4.5 (`findById` of a foreign row is `Optional.empty()`); the HTTP 404 needs a controller, so it closes at **P6.7** `WrongTenantTest`
+- [x] Foreign-tenant resources return **404**, never 403 (ADR-006) — repository primitive proven in P4.4/P4.5 (`findById` of a foreign row is `Optional.empty()`); the HTTP half closed at **P6.7** `WrongTenantTest` (foreign id → 404 on read/update/delete, body byte-identical to a random-UUID 404 after `timestamp`/`traceId` are stripped)
 
 ### F. Authentication & Session — Phase 5 ☑
 
@@ -124,17 +124,17 @@
 - [x] **FR-2.7 (P2)** MFA-ready architecture (TOTP/OTP hooks; enforcement deferred) — D12 login seam in `LoginService` + `mfa_enabled`/`mfa_enforced_at` columns in V1
 - [x] Auth + tenant isolation tests: unauthenticated → 401; tenant B cannot read tenant A users — `AuthTenantIsolationTest` (10 tests, P5.8)
 
-### G. Authorization / RBAC — Phase 6 ☐
+### G. Authorization / RBAC — Phase 6 ☑
 
-- [ ] **FR-3.1 (P0)** Every endpoint declares permission(s); default is deny (ArchUnit rule)
-- [ ] **FR-3.2 (P0)** Tenant ID derived from authenticated principal, never from client
-- [ ] Permission catalog `MODULE_ACTION` in code + Flyway seed (PATIENT_VIEW, PRESCRIPTION_CREATE, …)
-- [ ] **FR-3.5 (P1)** Roles CRUD (tenant-scoped) + Hospital Admin creates custom roles from catalog
-- [ ] **FR-3.3 (P0)** Resource-level rules: assigned/previously treated doctor policy (OQ-2), enforced in service + list queries
-- [ ] **FR-3.4 (P0)** Field-level masking (`FieldMaskingService`): diagnosis/notes/vitals hidden by permission; masked fields omitted, not blanked
-- [ ] Wrong-role test matrix for every endpoint (allowed/denied)
-- [ ] Wrong-tenant test for every endpoint (404, never 403)
-- [ ] Cross-doctor sensitive reads audited
+- [x] **FR-3.1 (P0)** Every endpoint declares permission(s); default is deny (ArchUnit rule) — `@RequirePermission` on every controller method except the 8-route anonymous allow-list, `EndpointPermissionArchUnitTest` (6 tests, P6.3) + `denyAll()` fallback still the URL default; matrix proof at P6.6
+- [x] **FR-3.2 (P0)** Tenant ID derived from authenticated principal, never from client — proven P4.2/P4.3 and re-verified on the new surface at **P6.7** (`X-Tenant-ID` mismatch → 404 before the controller, body `tenantId` → 422 with nothing written, `?tenantId=` ignored, no token + hint → 401)
+- [x] Permission catalog `MODULE_ACTION` in code + Flyway seed (PATIENT_VIEW, PRESCRIPTION_CREATE, …) — `PermissionCatalog` == the V2 seed **both directions**, 53 rows (P6.1 `PermissionCatalogTest`, 5 tests); documented in SECURITY §4.1; **no migration (D6)**
+- [x] **FR-3.5 (P1)** Roles CRUD (tenant-scoped) + Hospital Admin creates custom roles from catalog — P6.2 `RoleManagementTest` (14 tests): grant-scope rule, catalog-only writes, platform-only codes refused, system roles immutable, `RESOURCE_IN_USE`, six bundles provisioned at registration with the admin enrolled in `ADMIN`
+- [x] **FR-3.3 (P0)** Resource-level rules: assigned/previously treated doctor policy (OQ-2), enforced in service + list queries — P6.4 `ResourcePolicyTest` (15 tests) proves the framework and a real `UserSelfOrStaffPolicy` over `GET /staff`; list filtering is a SQL predicate. Real `PatientAccessPolicy` lands at **P10.8** (D7)
+- [x] **FR-3.4 (P0)** Field-level masking (`FieldMaskingService`): diagnosis/notes/vitals hidden by permission; masked fields omitted, not blanked — P6.5 `FieldMaskingTest` (9 tests); first production wiring **P10.8 / P12.7 / P17.4** (D8)
+- [x] Wrong-role test matrix for every endpoint (allowed/denied) — P6.6 `EndpointPermissionMatrixTest` (4 tests), driven by `RequestMappingHandlerMapping` enumeration so it grows with the API
+- [x] Wrong-tenant test for every endpoint (404, never 403) — P6.7 `WrongTenantTest` (5 tests); also closes group E's last open item above
+- [~] Cross-doctor sensitive reads audited — **framework + log seam at P6.4** (`PolicyAudit`, event `cross_doctor_read`, asserted by `ResourcePolicyTest`); the `audit_logs` row lands at **P14.6** and full coverage at **P19** (recorded deferral = SEC-10, not a gap)
 
 ### H. Frontend Foundation — Phase 7 ☐
 

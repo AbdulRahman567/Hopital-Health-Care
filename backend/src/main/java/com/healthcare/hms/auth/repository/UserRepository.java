@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -21,8 +22,14 @@ import org.springframework.data.repository.query.Param;
  * 5, TDD section 6.3): native SQL is passed to MySQL verbatim and is <b>not</b> tenant-filtered, so
  * it must state {@code tenant_id} itself. They exist for {@code TenantIsolationIT} and are never to
  * be called from application code.
+ *
+ * <p>P6.4 adds {@link JpaSpecificationExecutor} so a service can hand the repository a resource
+ * policy's {@link org.springframework.data.jpa.domain.Specification} together with the page request
+ * (TDD section 8.3: denied rows are removed in SQL, before the page is cut). It changes no existing
+ * method, and the generated SQL still carries the {@code @TenantId} predicate, because the filter
+ * is applied by Hibernate rather than by the query.
  */
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
 
   /** Email uniqueness is per tenant ({@code uq_users_tenant_email}). */
   Optional<User> findByEmail(String email);

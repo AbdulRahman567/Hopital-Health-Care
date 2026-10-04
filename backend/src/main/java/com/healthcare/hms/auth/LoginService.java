@@ -2,6 +2,7 @@ package com.healthcare.hms.auth;
 
 import com.healthcare.hms.auth.api.LoginRequest;
 import com.healthcare.hms.auth.repository.UserRepository;
+import com.healthcare.hms.authz.PermissionResolver;
 import com.healthcare.hms.common.ratelimit.RateLimitProperties;
 import com.healthcare.hms.common.ratelimit.RateLimiterService;
 import com.healthcare.hms.tenant.TenantBootstrapLookup;
@@ -60,6 +61,7 @@ public class LoginService {
   private final RateLimiterService rateLimiter;
   private final RateLimitProperties rateLimitProperties;
   private final LockoutService lockoutService;
+  private final PermissionResolver permissionResolver;
 
   public LoginService(
       TenantBootstrapLookup tenantBootstrapLookup,
@@ -70,7 +72,8 @@ public class LoginService {
       RefreshTokenService refreshTokenService,
       RateLimiterService rateLimiter,
       RateLimitProperties rateLimitProperties,
-      LockoutService lockoutService) {
+      LockoutService lockoutService,
+      PermissionResolver permissionResolver) {
     this.tenantBootstrapLookup = tenantBootstrapLookup;
     this.tenantRepository = tenantRepository;
     this.userRepository = userRepository;
@@ -80,6 +83,7 @@ public class LoginService {
     this.rateLimiter = rateLimiter;
     this.rateLimitProperties = rateLimitProperties;
     this.lockoutService = lockoutService;
+    this.permissionResolver = permissionResolver;
   }
 
   /**
@@ -137,7 +141,8 @@ public class LoginService {
     lockoutService.recordSuccess(tenantId, request.email(), user);
     log.info("Login succeeded: userId={}, tenantId={}", user.getId(), tenantId);
     return new LoginSession(
-        jwtTokenService.issue(user, tenantId), refreshTokenService.issue(user, userAgent));
+        jwtTokenService.issue(user, tenantId, permissionResolver.roleNames(tenantId, user.getId())),
+        refreshTokenService.issue(user, userAgent));
   }
 
   /**
