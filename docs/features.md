@@ -23,7 +23,7 @@
 | D | Database Foundation | 3 | P0 | ☑ Done |
 | E | Multi-Tenancy Isolation | 4 | P0 | ☑ Done (ADR-006 HTTP 404 proven at P6.7) |
 | F | Authentication & Session | 5 | P0 | ☑ Done (2026-10-04, merged `ce01e76`, 236 tests; P5.11 fixed SEC-1/SEC-2/SEC-3) |
-| G | Authorization / RBAC | 6 | P0 | ☑ Done (2026-10-04, `phase/06-authorization`, 294 tests; review findings SEC-6…SEC-10 recorded in PROJECT_CONTEXT §11) |
+| G | Authorization / RBAC | 6 | P0 | ☑ Done (2026-10-04, merged `a4314a8`, 294 tests; review findings SEC-6…SEC-10 recorded in PROJECT_CONTEXT §11) |
 | H | Frontend Foundation | 7 | P0 | ☐ Not started |
 | I | Hospital & Organization Mgmt | 8 | P0/P1 | ☐ Not started |
 | J | Staff & Doctor Management | 9 | P0 | ☐ Not started |

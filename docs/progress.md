@@ -3,7 +3,7 @@
 > Session-crossing dashboard. **Update this file at every phase close (and after any significant fix).**
 > Detail lives elsewhere: status truth = `ROADMAP.md` checkboxes · memory = `PROJECT_CONTEXT.md` · rules = `ENGINEERING_RULES.md` · prompts = `AI_DEVELOPMENT_GUIDE.md`.
 
-**Last updated:** 2026-10-04 — **Phase 6 Authorization/RBAC closed** (8/8 tasks, 294 tests green; **pushed to `phase/06-authorization`, not merged**)
+**Last updated:** 2026-10-04 — **Phase 6 Authorization/RBAC closed and merged** (8/8 tasks, 294 tests green, merged `--no-ff` into `main` as `a4314a8` + pushed)
 
 ---
 
@@ -17,8 +17,8 @@
 | 3 — Database Foundation | ☑ **Done** | 8/8 tasks (2026-10-02); 76 tests green; merged `--no-ff` → `main` as `493c6e0` + pushed |
 | 4 — Multi-Tenancy | ☑ **Done** | 8/8 tasks (2026-10-03); 147 tests green; merged `--no-ff` → `main` as `c2ed23b` + pushed; P4.8 docs re-closed same day |
 | 5 — Authentication | ☑ **Done** | 11/11 tasks (2026-10-04); 236 tests green; merged `--no-ff` → `main` as **`ce01e76`** + pushed; P5.9 findings `SEC-1`/`SEC-2`/`SEC-3` **fixed at P5.11**, `SEC-4`/`SEC-5` accepted |
-| 6 — Authorization / RBAC | ☑ **Done** | 8/8 tasks (2026-10-04); **294 tests green**; built on `phase/06-authorization` (`24e1dbe`…`e876abd` + docs) and **pushed, not merged**; review findings `SEC-6`…`SEC-10` all in `PROJECT_CONTEXT` §11 (0 P0/P1); no ADR |
-| 7–30 | ☐ Not started | Next: **Phase 7 — Frontend Foundation** (starts at **P7.1**) — only on user instruction |
+| 6 — Authorization / RBAC | ☑ **Done** | 8/8 tasks (2026-10-04); **294 tests green**; built on `phase/06-authorization` (`24e1dbe`…`33625a9`), merged `--no-ff` → `main` as **`a4314a8`** + pushed (post-merge gate re-run green); review findings `SEC-6`…`SEC-10` all in `PROJECT_CONTEXT` §11 (0 P0/P1); no ADR |
+| 7–30 | ☐ Not started | Next: **Phase 7 — Frontend Foundation** (starts at **P7.1**, new `phase/07-frontend` branch) — only on user instruction |
 
 **Verified snapshot (last run 2026-10-04):** `./mvnw -q spotless:check` **0** · `./mvnw clean test` **294 tests, 0 failures, 0 skipped** (236 at P5.11 + 58 across the 7 Phase 6 classes) · `docker compose ps` **4/4 healthy** · no `testcontainers/*` left in `docker ps -a` · tree clean after this docs commit · no secrets tracked (surefire uses a test-only JWT secret).
 
@@ -88,7 +88,7 @@
 - **Lint gates:** backend Spotless via Maven Wrapper (no system `mvn`) · frontend ESLint 9 + Prettier 3 + `tsc` strict · `README.md` quick start verified in a clean shell
 - **Deep tests 3/3:** fresh-clone E2E · Git Bash `./mvnw` (LF) · post-merge gate re-run → found + fixed CRLF bug `ff90709` (`frontend/** text eol=lf`)
 
-## 3. Commit history (Phases 0–5 pushed to `origin` and merged into `main`; **Phase 6 commits below are pushed to `phase/06-authorization` but not merged**)
+## 3. Commit history (Phases 0–6 all pushed to `origin` and merged into `main`; `main` = **`a4314a8`**)
 
 | Commit | What |
 |---|---|
@@ -155,15 +155,17 @@
 | `32bc133` | P6.5 `FieldMaskingService` — withhold diagnosis/notes/vitals by permission (D8) |
 | `dd78539` | P6.6 endpoint permission matrix, enumerated rather than listed (D1/D2) |
 | `e876abd` | P6.7 wrong-tenant 404s on every Phase 6 endpoint + §7 security review (ADR-006) |
-| (this commit) | P6.8 docs close: ROADMAP ☑ + evidence, SECURITY §4.1–4.8, ARCHITECTURE §3†, `PROJECT_CONTEXT` §4–§7/§11/§12/§13, `progress.md`, `features.md` group G, `API.md` §3 |
+| `33625a9` | P6.8 docs close: ROADMAP ☑ + evidence, SECURITY §4.1–4.8, ARCHITECTURE §3†, `PROJECT_CONTEXT` §4–§7/§11/§12/§13, `progress.md`, `features.md` group G, `API.md` §3 |
+| `a4314a8` | merge `--no-ff` phase/06-authorization → main (2026-10-04) + pushed; post-merge gate `spotless:check` 0 and `clean test` → **294 tests, 0 failures** |
+| (this commit) | docs: record the Phase 6 merge in PROJECT_CONTEXT + progress + features |
 
 ## 4. Next session — how to resume
 
 1. Read order: **this file → `PROJECT_CONTEXT.md` (§4 state, §5 next action, §13 gotchas) → `ROADMAP.md`** current phase.
 2. Start with "continue", or paste the Phase Prompt (`AI_DEVELOPMENT_GUIDE.md` §6) for **Phase 7**.
-3. **Phase 6 is complete but NOT merged.** Merge it first (`git merge --no-ff phase/06-authorization` on `main`, then push) — only on user instruction — before any Phase 7 work touches `main`. (Phase 5 is already merged as `ce01e76`.)
-4. Phase 7 starts from `main` on a new `phase/07-frontend` branch. Phase 6 lives entirely on **`phase/06-authorization`** (`24e1dbe`…`e876abd` + the P6.8 docs commit), all pushed. Conventional commits; one task per "continue"; stop at DoD. `Plans/` stays untracked — never `git add Plans/`. Write commit messages through a temp file (`git commit -F`) — PowerShell mangles quotes in `-m` and a here-string adds a BOM.
-5. **Next task = P7.1** (Next.js 15 app shell: TS strict, Tailwind, shadcn tokens; Verify `npm run build` exits 0). Phase 6's carry-overs: **`SEC-6`** (role mutations are unlogged — one structured INFO, or the `audit_logs` row at P14.6), **`SEC-7`** (authenticated writes unthrottled — fix or defer at P22), **`SEC-8`** (provisioning adopts by name without `system_flag` — fix when a second caller appears), **`SEC-9`/`SEC-10`** close at P10.8/P14.6; `features.md` FR-3.3 continues at **P10.8**, FR-1.4/FR-2.5 at **P8.4**/**P9.3**; **D6** `SameSite=Lax` one-domain assumption at **P27.1**. Frontend note: P7.7 depends on P6.3 (done) and reads permissions from the API's `roles` claim — which is display-only, the server enforces.
+3. **Phase 6 is merged** (`a4314a8`, pushed) — nothing left to merge. Phase 7 starts from `main` on a new **`phase/07-frontend`** branch (ENGINEERING_RULES §10).
+4. Conventional commits; one task per "continue"; stop at DoD. `Plans/` stays untracked — never `git add Plans/`. Write commit messages through a temp file (`git commit -F`) — PowerShell mangles quotes in `-m` and a here-string adds a BOM.
+5. **Next task = P7.1** (Next.js 15 app shell: TS strict, Tailwind, shadcn tokens; Verify `npm run build` exits 0). Phase 6's carry-overs: **`SEC-6`** (role mutations unlogged — one structured INFO, or the `audit_logs` row at P14.6), **`SEC-7`** (authenticated writes unthrottled — fix or defer at P22), **`SEC-8`** (provisioning adopts by name without `system_flag` — fix when a second caller appears), **`SEC-9`/`SEC-10`** close at P10.8/P14.6; `features.md` FR-3.3 continues at **P10.8**, FR-1.4/FR-2.5 at **P8.4**/**P9.3**; **D6** `SameSite=Lax` one-domain assumption at **P27.1**. Frontend note: P7.7 depends on P6.3 (done) and reads the `roles` claim for UX only — **the server enforces**; P7.6 needs Phase 5 auth endpoints, which are live.
 6. Stack is running (4× healthy). Fresh start: `cd infra && docker compose up -d --wait`. Full commands = `PROJECT_CONTEXT` §16 / `README.md`.
 
 ## 5. Top constraints for the new session
@@ -191,4 +193,5 @@
 | 2026-10-03 | Phase 5 P5.1–P5.5 built on `phase/05-authentication` (registration, login, refresh rotation, cookie transport) — then **rolled back to `b31dad7` (P4.7) on user instruction**; code preserved in `backup/pre-b31dad7-reset` (`f9f2db2`); uncommitted P5.6 rate-limit/lockout work deleted; P4.8 docs re-closed here, suite re-run green (147/0) |
 | 2026-10-04 | **Phase 5 rebuilt from scratch** (user chose rewrite over recovery): P5.1–P5.10 complete on `phase/05-authentication` (`2c73963`…`dab7f55`) — V4 tokens, registration + verification, login, rotation, cookie/CSRF/logout, Redis rate limit + lockout, password reset, isolation suite, security review (SEC-1…SEC-5, no ADR), docs close `1e80f9f`; **221 tests green, spotless 0** |
 | 2026-10-04 | **P5.11 security fixes** (scope fixed by the user: `SEC-1`/`SEC-2`/`SEC-3` only, D6 = docs only, `SEC-4`/`SEC-5` stay accepted): forward-headers + pinned proxy allowlist, both filters on `PathPatternRequestMatcher`, `Pii` address masking, 3 new suites (+15 tests) and a Hikari cap after a MySQL 151-connection blow-up; `bd07768` + docs `8405183` → **236 tests green, spotless 0** → merged `--no-ff` as **`ce01e76`** + pushed |
-| 2026-10-04 | **Phase 6 P6.1–P6.8 complete on `phase/06-authorization`** (built off the merged `ce01e76`, D1–D11 confirmed up front): 53-code `PermissionCatalog` == V2 seed both ways with **no migration** (D6) · roles CRUD + six system bundles provisioned inside registration with the admin in `ADMIN` (D4/D5) · `@RequirePermission` + DB-per-request authorities stage + 4 ArchUnit rules incl. the executable ISO-1 guardrail (D1/D3/D9) · `ResourcePolicy<T>` with SQL predicates + `PolicyAudit` log seam + the new `staff` module behind `STAFF_VIEW` (D7 + user decision) · `FieldMaskingService` omitting diagnosis/notes/vitals (D8) · enumeration-driven endpoint matrix · `WrongTenantTest` (ADR-006 404s across every leg) · §7 review: **0 P0/P1**, `SEC-6`…`SEC-10` recorded, ISO-1 executable / ISO-7 closed / ISO-8 refined, **no ADR** · docs close (SECURITY §4.1–4.8, ARCHITECTURE §3†, evidence block) → **294 tests green, spotless 0, pushed** → **not merged, awaiting instruction; Phase 7 not started** |
+| 2026-10-04 | **Phase 6 P6.1–P6.8 complete on `phase/06-authorization`** (built off the merged `ce01e76`, D1–D11 confirmed up front): 53-code `PermissionCatalog` == V2 seed both ways with **no migration** (D6) · roles CRUD + six system bundles provisioned inside registration with the admin in `ADMIN` (D4/D5) · `@RequirePermission` + DB-per-request authorities stage + ArchUnit gate (D9's 4 rules + a catalog-membership check + a canary, incl. the executable ISO-1 guardrail) (D1/D3/D9) · `ResourcePolicy<T>` with SQL predicates + `PolicyAudit` log seam + the new `staff` module behind `STAFF_VIEW` (D7 + user decision) · `FieldMaskingService` omitting diagnosis/notes/vitals (D8) · enumeration-driven endpoint matrix · `WrongTenantTest` (ADR-006 404s across every leg) · §7 review: **0 P0/P1**, `SEC-6`…`SEC-10` recorded, ISO-1 executable / ISO-7 closed / ISO-8 refined, **no ADR** · docs close (SECURITY §4.1–4.8, ARCHITECTURE §3†, evidence block) → **294 tests green, spotless 0, pushed as `33625a9`** |
+| 2026-10-04 | **Phase 6 merged** `--no-ff` into `main` as **`a4314a8`** + pushed (user instruction); the post-merge gate on `main` re-ran green — `spotless:check` 0, `clean test` **294 tests, 0 failures** — recorded in this docs commit. **Phase 7 not started** |
