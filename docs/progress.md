@@ -3,7 +3,7 @@
 > Session-crossing dashboard. **Update this file at every phase close (and after any significant fix).**
 > Detail lives elsewhere: status truth = `ROADMAP.md` checkboxes · memory = `PROJECT_CONTEXT.md` · rules = `ENGINEERING_RULES.md` · prompts = `AI_DEVELOPMENT_GUIDE.md`.
 
-**Last updated:** 2026-10-04 — **Phase 5 Authentication closed** (11/11 tasks incl. P5.11 security fixes, 236 tests re-verified green; **not merged, not pushed**)
+**Last updated:** 2026-10-04 — **Phase 6 Authorization/RBAC closed** (8/8 tasks, 294 tests green; **pushed to `phase/06-authorization`, not merged**)
 
 ---
 
@@ -16,12 +16,26 @@
 | 2 — Backend Foundation | ☑ **Done** | 9/9 tasks (2026-10-01); re-verified 2026-10-02; 30 tests green; merged `--no-ff` → `main` as `a982918` |
 | 3 — Database Foundation | ☑ **Done** | 8/8 tasks (2026-10-02); 76 tests green; merged `--no-ff` → `main` as `493c6e0` + pushed |
 | 4 — Multi-Tenancy | ☑ **Done** | 8/8 tasks (2026-10-03); 147 tests green; merged `--no-ff` → `main` as `c2ed23b` + pushed; P4.8 docs re-closed same day |
-| 5 — Authentication | ☑ **Done** | 11/11 tasks (2026-10-04); 236 tests green; built from scratch on `phase/05-authentication` after the rollback; **not merged, not pushed**; P5.9 findings `SEC-1`/`SEC-2`/`SEC-3` **fixed at P5.11**, `SEC-4`/`SEC-5` accepted — all in `PROJECT_CONTEXT` §11 |
-| 6–30 | ☐ Not started | Next: **Phase 6 — Authorization / RBAC** (starts at **P6.1**) — only on user instruction |
+| 5 — Authentication | ☑ **Done** | 11/11 tasks (2026-10-04); 236 tests green; merged `--no-ff` → `main` as **`ce01e76`** + pushed; P5.9 findings `SEC-1`/`SEC-2`/`SEC-3` **fixed at P5.11**, `SEC-4`/`SEC-5` accepted |
+| 6 — Authorization / RBAC | ☑ **Done** | 8/8 tasks (2026-10-04); **294 tests green**; built on `phase/06-authorization` (`24e1dbe`…`e876abd` + docs) and **pushed, not merged**; review findings `SEC-6`…`SEC-10` all in `PROJECT_CONTEXT` §11 (0 P0/P1); no ADR |
+| 7–30 | ☐ Not started | Next: **Phase 7 — Frontend Foundation** (starts at **P7.1**) — only on user instruction |
 
-**Verified snapshot (last run 2026-10-04):** `./mvnw -q spotless:check` **0** · `./mvnw clean test` **236 tests, 0 failures, 0 skipped** (147 pre-existing + 74 for P5.1…P5.9 + 15 for P5.11) · `docker compose ps` **4/4 healthy** · no `testcontainers/*` left in `docker ps -a` · tree clean after this docs commit · no secrets tracked (surefire uses a test-only JWT secret).
+**Verified snapshot (last run 2026-10-04):** `./mvnw -q spotless:check` **0** · `./mvnw clean test` **294 tests, 0 failures, 0 skipped** (236 at P5.11 + 58 across the 7 Phase 6 classes) · `docker compose ps` **4/4 healthy** · no `testcontainers/*` left in `docker ps -a` · tree clean after this docs commit · no secrets tracked (surefire uses a test-only JWT secret).
 
-## 2. What Phase 5 delivered (2026-10-04)
+## 2. What Phase 6 delivered (2026-10-04)
+
+- **Permission catalog (P6.1, `24e1dbe`):** `authz/PermissionCatalog`, the code half of the 53-row V2 seed — compared **both directions** by `PermissionCatalogTest`, `PLATFORM_ONLY` = the two tenant-lifecycle codes, `code = module || '_' || action`. **No migration (D6)**: Flyway stays `V1`–`V4`, `MigrationV2IT` still freezes 53, `MigrationIT` still 4 — 5 tests
+- **Roles + provisioning (P6.2, `75a6dbf`):** `Role`/`RolePermission`/`UserRole` over V2's columns (zero DDL), `RoleService` + `PermissionService` + `RoleController`/`PermissionsController`, and `SystemRoleProvisioner` writing the **six** bundles inside the registration transaction with the admin enrolled in `ADMIN`. Guards: grant-scope → 422, unknown code → 422 + nothing written, platform-only → 422, system role rename/delete → 409, assigned role → **409 `RESOURCE_IN_USE`**, duplicate name → 409 naming `name`, foreign id → 404. `SecurityConfig` gains `.authenticated()` for `/api/v1/roles/**` + `/api/v1/permissions` — 14 tests
+- **`@RequirePermission` + authorities stage + ArchUnit (P6.3, `360b521`):** annotation + `PermissionAuthorizationManager` + `PermissionAuthoritiesFilter` **after** `TenantContextFilter` (D1: DB per request, 2 indexed queries, effect on the next request, fail closed → 403); ArchUnit = D9's four rules **plus a catalog-membership check**, with a canary proving the first can fail — annotation/allow-list, catalog membership, controllers→services, module edges, and the ISO-1 `nativeQuery` guardrail; D2 populates the `roles` claim with role names only — 6 tests
+- **Resource policy framework (P6.4, `dd1cec0`):** `ResourcePolicy<T>` + registry + `readPredicate` (SQL, not post-filtering), deny by default, `PolicyAudit` cross-doctor log seam; OQ-2 triple proven (unassigned denied / assigned allowed / previously-treated allowed); real `UserSelfOrStaffPolicy` over a new **`staff`** module behind `STAFF_VIEW` (user decision) — 15 tests
+- **Field masking (P6.5, `32bc133`):** `FieldMaskingService` over a Jackson tree; receptionist payload has **no** `diagnosis`/`notes`/`vitals` key; doctor sees all three; partial grant → exactly its field; unknown/empty/null authorities → omit; envelope + `traceId` untouched — 9 tests
+- **Endpoint permission matrix (P6.6, `dd78539`):** enumeration-driven `RequestMappingHandlerMapping` (auto-growing): anonymous surface **exactly** the 8 auth routes, every endpoint answers 401/403/2xx as its permission requires, `roles` claim equals the account's roles, role change → next request — 4 tests
+- **Wrong-tenant suite (P6.7, `e876abd`):** foreign id → **404** on read/update/delete with a byte-identical random-UUID 404 body (ADR-006), listings/`totalElements` scoped, body `roleId`/`tenantId` → 422 with nothing written, hint → 404 before the controller, `?tenantId=` ignored, `TenantContext` empty after every request — 5 tests
+- **Security review (D11):** AI_DEVELOPMENT_GUIDE §7 read-only over `ce01e76..e876abd` (57 files, +6239/−24) → **0 P0/P1 · 1 P2 (`SEC-6`, no logging of role mutations) · 2 P3 (`SEC-7` unthrottled authenticated writes, `SEC-8` by-name adoption skips `system_flag`) · 2 informational (`SEC-9` masking not yet wired, `SEC-10` `PolicyAudit` is SLF4J-only)**; ISO-1's mitigation is now an executable ArchUnit rule, ISO-7 re-audited and closed for Phase 6, ISO-8 refined (ARCHITECTURE §3 now records the `config` edges); **no ADR raised**
+- **Docs (P6.8, this commit):** ROADMAP ☑ + evidence block, `SECURITY.md` §4.1–§4.8, `ARCHITECTURE.md` §3 dependency rule 5, `PROJECT_CONTEXT` §4/§5/§6/§7/§11/§12/§13, `API.md` §3, this file, `features.md` group G
+- **Gates:** `./mvnw clean test` → **294 tests, 0 failures**; `./mvnw -q spotless:check` → 0; **D11 = 2 sanctioned pre-existing-test edits** (`AuthFixtures` additive helpers, `RegistrationVerificationTest` clean-up only) **+ the recorded scope additions** (new `staff` module, `JpaSpecificationExecutor`, `AccessDeniedException` handler, ArchUnit dependency)
+
+### What Phase 5 delivered (2026-10-04) — for reference
 
 - **Migration (P5.1, `2c73963`):** `V4__auth_tokens.sql` — `refresh_tokens` (family/parent ids, SHA-256 `token_hash`, `expires_at`, `revoked_at` + reason, `tenant_id NOT NULL` per CONF-5, **no `ON DELETE CASCADE`**) and `verification_tokens` (type, single-use `consumed_at`); 14 tests (`MigrationAuthIT`)
 - **Registration + email verification (P5.2, `e74ee93`):** `POST /register-hospital` → 202 with a **uniform body** (D9), slug generated from the hospital name (`SlugGenerator`), tenant created `PENDING`, admin user + `verification_tokens` row, `VerificationMailer` behind the `EmailSender` port; `POST /verify-email` consumes the token, sets the tenant `ACTIVE` (FR-1.4 mechanism); unverified tenants cannot log in — 8 tests
@@ -74,7 +88,7 @@
 - **Lint gates:** backend Spotless via Maven Wrapper (no system `mvn`) · frontend ESLint 9 + Prettier 3 + `tsc` strict · `README.md` quick start verified in a clean shell
 - **Deep tests 3/3:** fresh-clone E2E · Git Bash `./mvnw` (LF) · post-merge gate re-run → found + fixed CRLF bug `ff90709` (`frontend/** text eol=lf`)
 
-## 3. Commit history (Phases 0–4 pushed to `origin` and merged; **Phase 5 commits below are local only** on `phase/05-authentication`)
+## 3. Commit history (Phases 0–5 pushed to `origin` and merged into `main`; **Phase 6 commits below are pushed to `phase/06-authorization` but not merged**)
 
 | Commit | What |
 |---|---|
@@ -132,15 +146,24 @@
 | `dab7f55` | P5.9 security review: SEC-1…SEC-5 + ISO-6/ISO-7 in `PROJECT_CONTEXT` §11, no ADR |
 | `1e80f9f` | P5.10 docs close: ROADMAP ☑ + evidence block, PROJECT_CONTEXT §4–§7/§12/§13, `progress.md`, `features.md` group F |
 | `bd07768` | P5.11 fix: `SEC-1` forward-headers + pinned proxy, `SEC-2` `PathPatternRequestMatcher` in both filters, `SEC-3` `Pii` masking (+ 3 new test classes, Hikari cap) |
-| (this commit) | P5.11 docs close: ROADMAP ☑ + evidence, DEPLOYMENT §6, `PROJECT_CONTEXT` §4–§7/§11/§12/§13, `progress.md`, `features.md` group F |
+| (P5.11 docs) | P5.11 docs close: ROADMAP ☑ + evidence, DEPLOYMENT §6, `PROJECT_CONTEXT` §4–§7/§11/§12/§13, `progress.md`, `features.md` group F |
+| `ce01e76` | merge `--no-ff` phase/05-authentication → main (2026-10-04) + pushed |
+| `24e1dbe` | P6.1 `PermissionCatalog` (53 codes) + both-directions equivalence guard vs the V2 seed |
+| `75a6dbf` | P6.2 roles/permissions surface + per-tenant system-role provisioning (D4/D5) |
+| `360b521` | P6.3 `@RequirePermission` deny-by-default + authorities stage + ArchUnit gate (D1/D3/D9) |
+| `dd1cec0` | P6.4 resource policy framework + real row-level read rule + the `staff` module (D7, OQ-2) |
+| `32bc133` | P6.5 `FieldMaskingService` — withhold diagnosis/notes/vitals by permission (D8) |
+| `dd78539` | P6.6 endpoint permission matrix, enumerated rather than listed (D1/D2) |
+| `e876abd` | P6.7 wrong-tenant 404s on every Phase 6 endpoint + §7 security review (ADR-006) |
+| (this commit) | P6.8 docs close: ROADMAP ☑ + evidence, SECURITY §4.1–4.8, ARCHITECTURE §3†, `PROJECT_CONTEXT` §4–§7/§11/§12/§13, `progress.md`, `features.md` group G, `API.md` §3 |
 
 ## 4. Next session — how to resume
 
 1. Read order: **this file → `PROJECT_CONTEXT.md` (§4 state, §5 next action, §13 gotchas) → `ROADMAP.md`** current phase.
-2. Start with "continue", or paste the Phase Prompt (`AI_DEVELOPMENT_GUIDE.md` §6) for **Phase 6**.
-3. **Phase 5 is complete but NOT merged.** Merge it first (`git merge --no-ff phase/05-authentication` on `main`, then push) — only on user instruction — before any Phase 6 work touches `main`.
-4. Phase 6 starts from `main` on a new `phase/06-authorization` branch. Phase 5 lives entirely on **`phase/05-authentication`** (`2c73963`…`bd07768` + two docs commits); the superseded first attempt is only in `backup/pre-b31dad7-reset` (`f9f2db2`) — **never cherry-pick from it** (the user chose a from-scratch rewrite). Conventional commits; one task per "continue"; stop at DoD. `Plans/` stays untracked — never `git add Plans/`. Write commit messages through a temp file (`git commit -F`) — PowerShell mangles quotes in `-m`.
-5. **Next task = P6.1** (authorization module per ARCHITECTURE §3: `authz` depends on common only). Phase 5's carry-overs: **`SEC-1`/`SEC-2`/`SEC-3` are fixed** (P5.11) so nothing to re-audit there; **`SEC-4`** pessimistic lock stays accepted (revisit P23.1/P23.7); **D6** `SameSite=Lax` assumes one registrable domain — recorded on ROADMAP **P27.1** and DEPLOYMENT §6; `features.md` FR-1.4 / FR-2.5 closing tests at **P8.4** / **P9.3**.
+2. Start with "continue", or paste the Phase Prompt (`AI_DEVELOPMENT_GUIDE.md` §6) for **Phase 7**.
+3. **Phase 6 is complete but NOT merged.** Merge it first (`git merge --no-ff phase/06-authorization` on `main`, then push) — only on user instruction — before any Phase 7 work touches `main`. (Phase 5 is already merged as `ce01e76`.)
+4. Phase 7 starts from `main` on a new `phase/07-frontend` branch. Phase 6 lives entirely on **`phase/06-authorization`** (`24e1dbe`…`e876abd` + the P6.8 docs commit), all pushed. Conventional commits; one task per "continue"; stop at DoD. `Plans/` stays untracked — never `git add Plans/`. Write commit messages through a temp file (`git commit -F`) — PowerShell mangles quotes in `-m` and a here-string adds a BOM.
+5. **Next task = P7.1** (Next.js 15 app shell: TS strict, Tailwind, shadcn tokens; Verify `npm run build` exits 0). Phase 6's carry-overs: **`SEC-6`** (role mutations are unlogged — one structured INFO, or the `audit_logs` row at P14.6), **`SEC-7`** (authenticated writes unthrottled — fix or defer at P22), **`SEC-8`** (provisioning adopts by name without `system_flag` — fix when a second caller appears), **`SEC-9`/`SEC-10`** close at P10.8/P14.6; `features.md` FR-3.3 continues at **P10.8**, FR-1.4/FR-2.5 at **P8.4**/**P9.3**; **D6** `SameSite=Lax` one-domain assumption at **P27.1**. Frontend note: P7.7 depends on P6.3 (done) and reads permissions from the API's `roles` claim — which is display-only, the server enforces.
 6. Stack is running (4× healthy). Fresh start: `cd infra && docker compose up -d --wait`. Full commands = `PROJECT_CONTEXT` §16 / `README.md`.
 
 ## 5. Top constraints for the new session
@@ -151,8 +174,8 @@
 4. **Backend test rule:** surefire injects a test-only `hms.security.jwt-secret`; running the app itself needs `--hms.security.jwt-secret=<48+ chars>` (or `HMS_JWT_SECRET`). Spring CLI args in tests must have the `--` prefix. Keep `mvnw`/`*.sh`/`frontend/**` LF (`.gitattributes`).
 5. **Never commit `infra/.env`** (gitignored). Never start the next phase automatically (ENGINEERING_RULES §2.1).
 6. **Two test databases, never conflate them:** `hms_test` (per-JVM `TestDatabase`, injected into every context) vs `MigrationTestSupport`'s separate container with a fresh schema per suite. Per-migration ITs assert `db.migrationSucceeded("N")`, **not** `currentVersion()` (a later `Vx` lands, `migrate()` applies everything).
-7. **MySQL quirks (recorded in `DATABASE.md` §2):** PKs always surface as `PRIMARY`; FKs get an auto `fk_*` index; `TINYINT(1)` logs warning 1681 (leave it). A full `./mvnw clean test` costs ~2–4 min: since Phase 5 each suite needs **both** a Testcontainers MySQL *and* Redis (~35–45 s each, both cached after the first pull). Prefer `clean test` over `test` — the VS Code Java extension can leave ECJ `Unresolved compilation problem:` stubs in `target/`.
-8. **Tenant context is mandatory for any repository work:** after startup, a JPA call on an empty `TenantContext` fails with `No tenant context is bound…` (by design — see `PROJECT_CONTEXT` §13.21). Wrap work in `TenantContext.run(...)` / `runWith(payload, …)`; native SQL is **never** tenant-filtered and must state `tenant_id` itself.
+7. **MySQL quirks (recorded in `DATABASE.md` §2):** PKs always surface as `PRIMARY`; FKs get an auto `fk_*` index; `TINYINT(1)` logs warning 1681 (leave it). A full `./mvnw clean test` costs ~3–5 min: each suite needs a Testcontainers MySQL *and* Redis (~35–45 s each, both cached after the first pull). Prefer `clean test` over `test` — the VS Code Java extension can leave ECJ `Unresolved compilation problem:` stubs in `target/`.
+8. **Tenant context is mandatory for any repository work:** after startup, a JPA call on an empty `TenantContext` fails with `No tenant context is bound…` (by design — see `PROJECT_CONTEXT` §13.21). Wrap work in `TenantContext.run(...)` / `runWith(payload, …)`; native SQL is **never** tenant-filtered and must state `tenant_id` itself. And since Phase 6, **role rows are a second FK hazard**: delete `user_roles` → `role_permissions` → `roles` before `users` (`PROJECT_CONTEXT` §13.33).
 
 ## 6. Session log
 
@@ -167,4 +190,5 @@
 | 2026-10-03 | Phase 4 P4.1–P4.8 complete on `phase/04-multitenancy` (D1–D8 accepted up front): tenant claim → `TenantContext` → `@TenantId` filtering, `X-Tenant-ID` mismatch → 404, isolation suite, `TenantKeys`/`TenantJobPayload`, security review (0 P0/P1/P2, **no ADR**), 147 tests green, 7 deviations recorded → **merged `c2ed23b` + pushed** |
 | 2026-10-03 | Phase 5 P5.1–P5.5 built on `phase/05-authentication` (registration, login, refresh rotation, cookie transport) — then **rolled back to `b31dad7` (P4.7) on user instruction**; code preserved in `backup/pre-b31dad7-reset` (`f9f2db2`); uncommitted P5.6 rate-limit/lockout work deleted; P4.8 docs re-closed here, suite re-run green (147/0) |
 | 2026-10-04 | **Phase 5 rebuilt from scratch** (user chose rewrite over recovery): P5.1–P5.10 complete on `phase/05-authentication` (`2c73963`…`dab7f55`) — V4 tokens, registration + verification, login, rotation, cookie/CSRF/logout, Redis rate limit + lockout, password reset, isolation suite, security review (SEC-1…SEC-5, no ADR), docs close `1e80f9f`; **221 tests green, spotless 0** |
-| 2026-10-04 | **P5.11 security fixes** (scope fixed by the user: `SEC-1`/`SEC-2`/`SEC-3` only, D6 = docs only, `SEC-4`/`SEC-5` stay accepted): forward-headers + pinned proxy allowlist, both filters on `PathPatternRequestMatcher`, `Pii` address masking, 3 new suites (+15 tests) and a Hikari cap after a MySQL 151-connection blow-up; `bd07768` + this docs commit → **236 tests green, spotless 0** → **not merged, awaiting instruction; Phase 6 not started** |
+| 2026-10-04 | **P5.11 security fixes** (scope fixed by the user: `SEC-1`/`SEC-2`/`SEC-3` only, D6 = docs only, `SEC-4`/`SEC-5` stay accepted): forward-headers + pinned proxy allowlist, both filters on `PathPatternRequestMatcher`, `Pii` address masking, 3 new suites (+15 tests) and a Hikari cap after a MySQL 151-connection blow-up; `bd07768` + docs `8405183` → **236 tests green, spotless 0** → merged `--no-ff` as **`ce01e76`** + pushed |
+| 2026-10-04 | **Phase 6 P6.1–P6.8 complete on `phase/06-authorization`** (built off the merged `ce01e76`, D1–D11 confirmed up front): 53-code `PermissionCatalog` == V2 seed both ways with **no migration** (D6) · roles CRUD + six system bundles provisioned inside registration with the admin in `ADMIN` (D4/D5) · `@RequirePermission` + DB-per-request authorities stage + 4 ArchUnit rules incl. the executable ISO-1 guardrail (D1/D3/D9) · `ResourcePolicy<T>` with SQL predicates + `PolicyAudit` log seam + the new `staff` module behind `STAFF_VIEW` (D7 + user decision) · `FieldMaskingService` omitting diagnosis/notes/vitals (D8) · enumeration-driven endpoint matrix · `WrongTenantTest` (ADR-006 404s across every leg) · §7 review: **0 P0/P1**, `SEC-6`…`SEC-10` recorded, ISO-1 executable / ISO-7 closed / ISO-8 refined, **no ADR** · docs close (SECURITY §4.1–4.8, ARCHITECTURE §3†, evidence block) → **294 tests green, spotless 0, pushed** → **not merged, awaiting instruction; Phase 7 not started** |

@@ -51,7 +51,9 @@ Base URL: `/api/v1`. JSON over HTTPS. Documented with OpenAPI (dev; protected or
 ```
 
 ### Standard Error Codes
-`VALIDATION_FAILED`, `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `ACCESS_DENIED`, `NOT_FOUND`, `DUPLICATE_RESOURCE`, `SLOT_UNAVAILABLE`, `VERSION_CONFLICT`, `RECORD_FINALIZED`, `RATE_LIMITED`, `FILE_TOO_LARGE`, `FILE_TYPE_NOT_ALLOWED`, `INTERNAL_ERROR`.
+`VALIDATION_FAILED`, `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `ACCESS_DENIED`, `NOT_FOUND`, `DUPLICATE_RESOURCE`, `RESOURCE_IN_USE`, `SLOT_UNAVAILABLE`, `VERSION_CONFLICT`, `RECORD_FINALIZED`, `RATE_LIMITED`, `FILE_TOO_LARGE`, `FILE_TYPE_NOT_ALLOWED`, `INTERNAL_ERROR`.
+
+`RESOURCE_IN_USE` (added at P6.2, decision D5): 409 for a resource that exists and is valid to ask about but cannot be removed while it is referenced — today, a role still assigned to accounts.
 
 ## 4. Pagination, Sorting, Filtering, Search
 - `?page=0&size=20` (default 20, max 100).
