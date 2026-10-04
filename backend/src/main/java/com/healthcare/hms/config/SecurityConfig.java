@@ -43,6 +43,12 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
  * P5.5 lands the custom-header guard that actually protects the cookie endpoints. P5.3 adds {@code
  * login} to the same list — it must be reachable with no token, since it is how a token is
  * obtained.
+ *
+ * <p>P6.2 adds {@code /api/v1/roles} and {@code /api/v1/permissions} as {@code .authenticated()}
+ * routes: the first surface reachable by a signed-in caller at all. They are decided here only to
+ * that depth; which permission each route needs is enforced on the handler by
+ * {@code @RequirePermission} (P6.3), and {@code anyRequest().denyAll()} stays the answer for every
+ * route no phase has declared.
  */
 @Configuration
 @EnableWebSecurity
@@ -106,6 +112,17 @@ public class SecurityConfig {
                         "/api/v1/auth/forgot-password",
                         "/api/v1/auth/reset-password")
                     .permitAll()
+                    // P6.2 (decision D3): the first *authorized* surface. This is the
+                    // endpoint-by-endpoint replacement of denyAll() the javadoc above promises,
+                    // and it stops at exactly this depth — "somebody is signed in". Which
+                    // permission each route needs is decided by @RequirePermission on the handler
+                    // (P6.3), so no business rule migrates into configuration. Everything not
+                    // named here keeps denyAll(), including any route a later phase forgets to
+                    // declare.
+                    .requestMatchers("/api/v1/roles", "/api/v1/roles/**")
+                    .authenticated()
+                    .requestMatchers("/api/v1/permissions")
+                    .authenticated()
                     .anyRequest()
                     .denyAll())
         .exceptionHandling(
