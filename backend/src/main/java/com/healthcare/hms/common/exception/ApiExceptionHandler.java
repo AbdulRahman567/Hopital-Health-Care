@@ -13,6 +13,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -27,7 +31,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
  *
  * <p>Maps exceptions to the standard error envelope from API.md section 3 with exact HTTP statuses:
  * 422 for validation failures naming every offending field, 400 for malformed input, 404 for
- * missing/foreign resources, 409 for conflicts and a generic 500 without stack traces.
+ * missing/foreign resources, 409 for conflicts, 401/403 for the two halves of an authorization
+ * refusal (P6.3) and a generic 500 without stack traces.
  */
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -106,6 +111,32 @@ public class ApiExceptionHandler {
   @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
   public ResponseEntity<ApiErrorResponse> handleNoResource(Exception ex) {
     return error(404, ErrorCodes.NOT_FOUND, "Resource not found.", null);
+  }
+
+  /**
+   * P6.3: a permission refusal leaves the controller as a Spring Security {@link
+   * AccessDeniedException}, and without this method the catch-all below would answer 500 for it.
+   *
+   * <p>The security chain that normally writes the 401/403 envelope sits <i>outside</i> the {@code
+   * DispatcherServlet}; it can only see an exception that no {@code @ExceptionHandler} resolved,
+   * and this class resolves everything. Rethrowing from an exception handler is not an escape
+   * either — {@code DispatcherServlet} treats a handler that threw as "handled" and the caller
+   * would get an empty 200. So the decision is reproduced here, from the one input {@code
+   * ExceptionTranslationFilter} itself would use: is there an authenticated principal?
+   *
+   * <p>401 and 403 deliberately use the same two codes as {@code SecurityConfig}'s entry point and
+   * access-denied handler, so a caller cannot tell which half of the pipeline answered.
+   */
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    boolean authenticated =
+        authentication != null
+            && authentication.isAuthenticated()
+            && !(authentication instanceof AnonymousAuthenticationToken);
+    return authenticated
+        ? error(403, ErrorCodes.ACCESS_DENIED, "Access denied.", null)
+        : error(401, ErrorCodes.UNAUTHENTICATED, "Authentication required.", null);
   }
 
   @ExceptionHandler(Exception.class)

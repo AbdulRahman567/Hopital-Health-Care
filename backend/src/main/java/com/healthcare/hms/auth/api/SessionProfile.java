@@ -13,8 +13,11 @@ import java.util.List;
  * @param email login address
  * @param firstName given name
  * @param lastName family name
- * @param roles empty until Phase 6 assigns any — declared now so the shape is stable, exactly as
- *     the {@code roles} claim is in the JWT
+ * @param roles the role <b>names</b> this account holds, alphabetically ordered (decision D2,
+ *     populated from P6.3): display data for a header and a sidebar, and the same list the JWT
+ *     {@code roles} claim carries. Empty for an account enrolled in no role. It is never read by an
+ *     authorization decision — that reads permission codes from the database on every request
+ *     instead, so a role edit is visible on the next request even though this snapshot is not
  * @param tenantName display name of the hospital this session belongs to
  */
 public record SessionProfile(

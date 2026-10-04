@@ -1,6 +1,7 @@
 package com.healthcare.hms.authz.api;
 
 import com.healthcare.hms.authz.PermissionService;
+import com.healthcare.hms.authz.RequirePermission;
 import com.healthcare.hms.common.api.ApiResponse;
 import com.healthcare.hms.common.api.PageParams;
 import java.util.List;
@@ -30,6 +31,7 @@ public class PermissionsController {
   }
 
   @GetMapping
+  @RequirePermission("ROLE_VIEW")
   public ResponseEntity<ApiResponse<List<PermissionResponse>>> list(
       @RequestParam(name = "page", required = false) Integer page,
       @RequestParam(name = "size", required = false) Integer size) {

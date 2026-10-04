@@ -1,6 +1,7 @@
 package com.healthcare.hms.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.healthcare.hms.authz.PermissionResolver;
 import com.healthcare.hms.common.api.ApiErrorWriter;
 import com.healthcare.hms.common.exception.ErrorCodes;
 import com.healthcare.hms.common.ratelimit.RateLimitProperties;
@@ -30,7 +31,9 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
  * switch and — since Phase 5 — the anonymous auth endpoints are open; every other request is
  * rejected with a standard 401/403 JSON envelope. Swagger/OpenAPI paths stay permitted so
  * springdoc's own switch decides visibility — enabled in dev (200), disabled in prod (404, P2.6).
- * Later phases replace {@code denyAll()} endpoint-by-endpoint with declared permissions.
+ * Since P6.3 the replacement of {@code denyAll()} is endpoint-by-endpoint and declared: a route
+ * becomes {@code .authenticated()} only when its handlers carry {@code @RequirePermission}, and
+ * everything else keeps the default.
  *
  * <p>P4.2 adds bearer-token verification (decision D1-A): an HS256 {@link JwtDecoder} built from
  * the existing {@code hms.security.jwt-secret}, so {@link TenantContextFilter} can read a verified
@@ -49,6 +52,12 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
  * that depth; which permission each route needs is enforced on the handler by
  * {@code @RequirePermission} (P6.3), and {@code anyRequest().denyAll()} stays the answer for every
  * route no phase has declared.
+ *
+ * <p>P6.3 adds {@link PermissionAuthoritiesFilter} after {@link TenantContextFilter}: this chain
+ * now answers <i>whether the route is reachable at all</i> and the filter answers <i>which
+ * authorities the caller carries into it</i>. Both halves are needed because the permission itself
+ * is read from the database on every request (decision D1) — a token can name the tenant, but it
+ * can never carry the privilege map that outlives the row it was copied from.
  */
 @Configuration
 @EnableWebSecurity
@@ -75,7 +84,8 @@ public class SecurityConfig {
       ObjectMapper objectMapper,
       JwtDecoder jwtDecoder,
       RateLimiterService rateLimiter,
-      RateLimitProperties rateLimitProperties)
+      RateLimitProperties rateLimitProperties,
+      PermissionResolver permissionResolver)
       throws Exception {
     // D5: Spring's CSRF token is session-bound, and this app is stateless — it would reject every
     // POST from the first byte Phase 5 sends. The guard that does apply (a custom header on the
@@ -177,6 +187,14 @@ public class SecurityConfig {
         // also register it in the servlet container at /* and run it a second time.
         .addFilterAfter(
             new TenantContextFilter(objectMapper), BearerTokenAuthenticationFilter.class)
+        // P6.3 (decision D1): the authorities stage, chained immediately after tenant resolution —
+        // the two lookups it makes are tenant-scoped, so it cannot run earlier, and everything that
+        // answers "may this caller do this" reads what it wrote, so it cannot run later. Same
+        // inline
+        // construction as its neighbours, for the same reason (a Filter bean would also be
+        // registered by Boot at /* and run twice).
+        .addFilterAfter(
+            new PermissionAuthoritiesFilter(permissionResolver), TenantContextFilter.class)
         // P5.5 (decision D5). Positioned immediately before authorization, which is TDD section
         // 4.1's slot for it: rate limit -> authentication -> tenant resolution -> csrf guard ->
         // authorization. Same inline construction, same reason as the filter above.

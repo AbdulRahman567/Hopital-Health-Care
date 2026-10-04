@@ -301,11 +301,43 @@ class RoleManagementTest {
   }
 
   @Test
+  void aCallerWithoutTheDeclaredPermissionIsDeniedAtTheEndpoint() throws Exception {
+    // P6.3: the annotation is enforced before the service runs, so the anti-escalation rules
+    // below are never even reachable without ROLE_CREATE.
+    Tenant admin = signedInAdministrator();
+    createRole(
+        admin, "Viewer", code(PermissionCatalog.PATIENT_VIEW), code(PermissionCatalog.ROLE_VIEW));
+    Tenant viewer =
+        signIn(
+            admin.tenantId, "p63-viewer-" + UUID.randomUUID() + "@example.test", List.of("Viewer"));
+
+    mockMvc
+        .perform(
+            post(ROLES)
+                .header(HttpHeaders.AUTHORIZATION, viewer.bearer())
+                .contentType(APPLICATION_JSON)
+                .content(
+                    "{\"name\":\"Never Created\",\"permissionCodes\":["
+                        + code(PermissionCatalog.PATIENT_VIEW)
+                        + "]}"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+
+    assertThat(
+            count(
+                "SELECT COUNT(*) FROM roles WHERE tenant_id = ? AND name = 'Never Created'",
+                admin.tenantId))
+        .isZero();
+  }
+
+  @Test
   void aCreatorMayNotGrantAPermissionTheyDoNotHold() throws Exception {
     Tenant admin = signedInAdministrator();
-    // A deliberately narrow bundle: PATIENT_VIEW only, so this caller's authority set is provably
-    // smaller than the catalog it is about to be asked to grant from.
-    createRole(admin, "Reader", code(PermissionCatalog.PATIENT_VIEW));
+    // A deliberately narrow bundle — enough to reach the endpoint (ROLE_CREATE), and no more:
+    // PATIENT_VIEW only, so this caller's authority set is provably smaller than the catalog it is
+    // about to be asked to grant from.
+    createRole(
+        admin, "Reader", code(PermissionCatalog.PATIENT_VIEW), code(PermissionCatalog.ROLE_CREATE));
     Tenant reader =
         signIn(
             admin.tenantId, "p62-reader-" + UUID.randomUUID() + "@example.test", List.of("Reader"));
