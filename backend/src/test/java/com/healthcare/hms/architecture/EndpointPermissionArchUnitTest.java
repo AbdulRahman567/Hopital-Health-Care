@@ -367,7 +367,7 @@ class EndpointPermissionArchUnitTest {
     allowed.put("auth", Set.of("tenant", "authz", "audit", "notification", "common", "config"));
     allowed.put("authz", Set.of("tenant", "common"));
     allowed.put("organization", Set.of("tenant", "authz", "audit", "common"));
-    allowed.put("staff", Set.of("organization", "auth", "common"));
+    allowed.put("staff", Set.of("organization", "auth", "authz", "common"));
     allowed.put("patient", Set.of("tenant", "authz", "audit", "common"));
     allowed.put("appointment", Set.of("patient", "staff", "common"));
     allowed.put("clinical", Set.of("patient", "appointment", "common"));

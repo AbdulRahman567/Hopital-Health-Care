@@ -58,6 +58,12 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
  * authorities the caller carries into it</i>. Both halves are needed because the permission itself
  * is read from the database on every request (decision D1) — a token can name the tenant, but it
  * can never carry the privilege map that outlives the row it was copied from.
+ *
+ * <p>P6.4 adds {@code /api/v1/staff} to the same endpoint-by-endpoint replacement, and is the first
+ * route where three separate decisions are visible at once: {@code .authenticated()} here says a
+ * signed-in caller may reach it, {@code @RequirePermission("STAFF_VIEW")} says which code is
+ * needed, and {@code UserSelfOrStaffPolicy} inside {@code StaffService} says which rows that caller
+ * may open. Nothing about the third is written here — this class decides routes, not rows.
  */
 @Configuration
 @EnableWebSecurity
@@ -132,6 +138,13 @@ public class SecurityConfig {
                     .requestMatchers("/api/v1/roles", "/api/v1/roles/**")
                     .authenticated()
                     .requestMatchers("/api/v1/permissions")
+                    .authenticated()
+                    // P6.4: the staff read surface, declared to exactly the same depth — the
+                    // routes exist for a signed-in caller and @RequirePermission on the handler
+                    // says which code is needed. The row-level rule (own account, or a colleague's
+                    // with STAFF_VIEW) is enforced in StaffService, not here: configuration would
+                    // have to know what a "colleague" is, and it must not.
+                    .requestMatchers("/api/v1/staff", "/api/v1/staff/**")
                     .authenticated()
                     .anyRequest()
                     .denyAll())

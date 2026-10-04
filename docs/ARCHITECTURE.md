@@ -37,7 +37,7 @@ Users (Admin, Doctor, Nurse, Reception, Lab, Billing)
 | `auth` | Login, tokens, reset, verification | tenant, authz, audit, notification |
 | `authz` | Permissions, roles, resource & field policies | tenant, common |
 | `organization` | Hospital settings, departments | tenant, authz, audit |
-| `staff` | Staff, invitations | organization, auth |
+| `staff` | Staff, invitations | organization, auth, authz |
 | `patient` | Patients, allergies, assignments | tenant, authz, audit |
 | `appointment` | Booking, queue | patient, staff |
 | `clinical` | Visits, vitals, notes, diagnoses, orders | patient, appointment |

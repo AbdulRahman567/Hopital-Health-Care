@@ -54,4 +54,15 @@ public final class CurrentActor {
   public static UUID tenantId() {
     return TenantContext.require();
   }
+
+  /**
+   * The tenant this request is scoped to, or empty when nothing is bound.
+   *
+   * <p>The read-only counterpart to {@link #tenantId()} for callers on the decision path rather
+   * than the action path: a resource policy that cannot say where it is must answer "no", not fail
+   * the read (decision D7).
+   */
+  public static Optional<UUID> findTenantId() {
+    return TenantContext.find();
+  }
 }
